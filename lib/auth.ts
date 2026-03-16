@@ -15,7 +15,6 @@ export const mockUsers: User[] = [
     role: 'HOTEL',
     verified: true,
     price: 5000,
-    features: ['WiFi', 'Pool', 'Breakfast'],
     location: 'Mumbai',
   },
   {
@@ -24,7 +23,6 @@ export const mockUsers: User[] = [
     email: 'restaurant@example.com',
     role: 'RESTAURANT',
     verified: true,
-    features: ['Veg', 'Non-Veg', 'Home Delivery'],
     location: 'Bangalore',
   },
   {
@@ -44,13 +42,12 @@ export const login = (email: string, role: UserRole): User | null => {
 };
 
 export const register = (user: Partial<User>): User => {
-  // Mock registration
   const newUser: User = {
     id: Math.random().toString(36).substr(2, 9),
     name: user.name || '',
     email: user.email || '',
     role: user.role || 'TOURIST',
-    verified: user.role === 'TOURIST' ? true : false, // Others need verification
+    verified: user.role === 'TOURIST',
     ...user,
   };
   return newUser;
