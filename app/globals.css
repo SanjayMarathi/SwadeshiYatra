@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffaf5;
+  --foreground: #4a2f1a;
 }
 
 @theme inline {
@@ -18,8 +18,89 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 8px 22px rgba(249, 115, 22, 0.2); }
+    50% { box-shadow: 0 14px 30px rgba(234, 88, 12, 0.3); }
+  }
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-floaty {
+    animation: floaty 5s ease-in-out infinite;
+  }
+
+  .animate-glowPulse {
+    animation: glowPulse 2.5s ease-in-out infinite;
+  }
+
+  .theme-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 245, 236, 0.96));
+    border: 1px solid rgba(251, 146, 60, 0.24);
+    box-shadow: 0 10px 26px rgba(194, 65, 12, 0.12);
+    backdrop-filter: blur(4px);
+  }
+
+  .theme-pill {
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.38), rgba(251, 146, 60, 0.16));
+    border: 1px solid rgba(251, 146, 60, 0.35);
+  }
+
+  .theme-button {
+    background: linear-gradient(90deg, #f97316, #ea580c);
+    color: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .theme-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(194, 65, 12, 0.34);
+    filter: saturate(1.06);
+  }
+
+  .theme-button-secondary {
+    background: white;
+    color: #9a3412;
+    border: 1px solid rgba(251, 146, 60, 0.45);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .theme-button-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(251, 146, 60, 0.28);
+  }
+
+  .hover-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 30px rgba(194, 65, 12, 0.16);
+    border-color: rgba(251, 146, 60, 0.45);
+  }
+
+  .text-gradient {
+    background: linear-gradient(90deg, #ea580c, #f59e0b);
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .shimmer-strip {
+    background: linear-gradient(110deg, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0.15) 60%);
+    background-size: 220% 100%;
+    animation: shimmer 2.2s linear infinite;
   }
 }
 
@@ -31,7 +112,10 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at 8% 10%, rgba(253, 186, 116, 0.35) 0%, transparent 30%),
+    radial-gradient(circle at 92% 14%, rgba(251, 146, 60, 0.2) 0%, transparent 28%),
+    linear-gradient(180deg, #fffaf5 0%, #fff3e8 55%, #ffedd5 100%);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }

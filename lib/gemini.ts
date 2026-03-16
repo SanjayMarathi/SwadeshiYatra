@@ -29,11 +29,12 @@ export const getTouristPlaces = async (city: string) => {
   2. Rating (out of 5)
   3. Fame Score (1-10)
   4. Brief Description
-  5. Best Time to visit (MORNING, AFTERNOON, EVENING, NIGHT)
-  6. Type (TEMPLE, BEACH, MUSEUM, PARK, HISTORICAL, OTHER)
+  5. History summary in 2-3 lines
+  6. Best Time to visit (MORNING, AFTERNOON, EVENING, NIGHT)
+  7. Type (TEMPLE, BEACH, MUSEUM, PARK, HISTORICAL, OTHER)
   
   Format the response as a JSON array of objects.
-  Each object should have keys: name, rating, fameScore, description, bestTime, type.`;
+  Each object should have keys: name, rating, fameScore, description, historyInfo, bestTime, type.`;
 
   try {
     const text = await generateText(prompt);
@@ -44,7 +45,7 @@ export const getTouristPlaces = async (city: string) => {
   }
 };
 
-type PlannerInput = Pick<TripPreferences, "budget" | "durationDays" | "cities" | "foodPreference" | "travelPreference"> & {
+type PlannerInput = Pick<TripPreferences, "budget" | "durationDays" | "cities" | "foodPreference" | "travelPreference" | "startCity" | "numberOfTravelers" | "tripPace" | "accommodationPreference" | "interests" | "requireGuide"> & {
   places: Pick<TouristPlace, "name">[];
 };
 
@@ -52,12 +53,18 @@ export const analyzeFeasibility = async (data: PlannerInput) => {
   const prompt = `As a travel expert, analyze if this trip is feasible:
   Budget: ${data.budget} INR
   Duration: ${data.durationDays} days
+  Start City: ${data.startCity}
   Selected Cities: ${data.cities.join(', ')}
   Selected Places: ${data.places.map((p) => p.name).join(', ')}
+  Number of Travelers: ${data.numberOfTravelers}
+  Trip Pace: ${data.tripPace}
+  Accommodation Preference: ${data.accommodationPreference}
+  Interests: ${data.interests.join(', ')}
+  Need Guide: ${data.requireGuide ? 'YES' : 'NO'}
   Food Preference: ${data.foodPreference}
   Travel Preference: ${data.travelPreference}
 
-  Check if the trip can be completed in the given time and budget. Consider city-to-city travel and local transit.
+  Check if the trip can be completed in the given time and budget. Consider city-to-city travel and local transit by BUS, TRAIN, and FLIGHT when relevant.
   
   Format the response as a JSON object:
   {
@@ -82,22 +89,37 @@ export const generateItinerary = async (data: PlannerInput) => {
   Cities: ${data.cities.join(', ')}
   Places: ${data.places.map((p) => p.name).join(', ')}
   Duration: ${data.durationDays} days
+  Start City: ${data.startCity}
+  Number of Travelers: ${data.numberOfTravelers}
+  Trip Pace: ${data.tripPace}
+  Accommodation Preference: ${data.accommodationPreference}
+  Interests: ${data.interests.join(', ')}
+  Need Guide: ${data.requireGuide ? 'YES' : 'NO'}
   Food: ${data.foodPreference}
   Transport: ${data.travelPreference}
 
   Suggest specific timings (e.g., 9:00 AM), activities, transport modes, and when to visit temples (morning), beaches (evening), etc.
-  Include city-to-city travel plans.
+  Include intercity routing for multiple cities across India with BUS/TRAIN/FLIGHT suggestions and route summary.
+  Include historyInfo for each place in simple language and include suggested guide with approximate price where possible.
 
   Format the response as a JSON array of objects:
   [
     {
+      "id": "string",
       "day": number,
       "time": "string",
+      "segmentType": "LOCAL_VISIT or INTERCITY_TRAVEL",
       "place": "string",
       "city": "string",
       "activity": "string",
+      "routeSummary": "string",
+      "transportMode": "BUS or TRAIN or FLIGHT or OTHER",
       "transport": "string",
+      "durationHours": number,
+      "distanceKm": number,
+      "historyInfo": "string",
       "suggestedGuide": "string",
+      "suggestedGuidePrice": number,
       "suggestedHotel": "string",
       "suggestedRestaurant": "string"
     }
