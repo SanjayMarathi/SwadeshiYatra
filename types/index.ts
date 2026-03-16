@@ -10,6 +10,11 @@ export interface User {
   expertise?: string;
   country?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  contactNumber?: string;
+  nationalIdDocument?: string;
+  licenseDocument?: string;
 }
 
 export interface TouristPlace {
@@ -19,6 +24,8 @@ export interface TouristPlace {
   rating: number;
   fameScore: number; // 1-10
   description: string;
+  historyInfo?: string;
+  imageUrl?: string;
   bestTime: 'MORNING' | 'AFTERNOON' | 'EVENING' | 'NIGHT';
   type: 'TEMPLE' | 'BEACH' | 'MUSEUM' | 'PARK' | 'HISTORICAL' | 'OTHER';
 }
@@ -34,12 +41,19 @@ export interface TripPreferences {
 }
 
 export interface ItineraryItem {
+  id?: string;
   day: number;
   time: string;
+  segmentType?: 'LOCAL_VISIT' | 'INTERCITY_TRAVEL';
   place: string;
   city: string;
   activity: string;
+  routeSummary?: string;
+  transportMode?: 'BUS' | 'TRAIN' | 'FLIGHT' | 'CAR' | 'METRO' | 'WALK' | 'OTHER';
   transport?: string;
+  durationHours?: number;
+  distanceKm?: number;
+  historyInfo?: string;
   suggestedGuide?: string;
   routeFrom?: string;
   routeTo?: string;

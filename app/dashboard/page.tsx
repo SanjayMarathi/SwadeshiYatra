@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User } from '@/types';
+import { getCurrentUser, updateCurrentUser } from '@/lib/auth';
 
 const DashboardPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -56,6 +57,18 @@ const DashboardPage = () => {
     setSuccess(true);
     setTimeout(() => setSuccess(false), 2500);
     setLoading(false);
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        setLatitude(lat);
+        setLongitude(lng);
+        setLocation(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      }
+    );
   };
 
   if (!user) return null;

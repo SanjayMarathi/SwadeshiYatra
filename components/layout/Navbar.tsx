@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { User } from '@/types';
+import { getCurrentUser, logout } from '@/lib/auth';
 
 const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);

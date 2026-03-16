@@ -240,6 +240,8 @@ function JourneyPlannerMode() {
   });
   const [feasibility, setFeasibility] = useState<FeasibilityResult | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
+  const [interestsInput, setInterestsInput] = useState('history, food, architecture');
+  const [guideRequests, setGuideRequests] = useState<Record<string, boolean>>({});
 
   const loadGuides = async (cities: string[]) => {
     if (!cities.length) { setGuideMap({}); return; }
@@ -478,6 +480,48 @@ function JourneyPlannerMode() {
               <p className="font-bold text-red-700">Trip Summary</p>
               <p className="text-sm text-gray-700 mt-1">{preferences.originCountry} → {selectedCities.join(' → ')} · {selectedPlaces.length} places · Guide daily total: ₹{totalGuideCost.toLocaleString('en-IN')}</p>
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-orange-900">Trip Pace</label>
+              <select
+                value={preferences.tripPace}
+                onChange={(e) => setPreferences({ ...preferences, tripPace: e.target.value as TripPreferences['tripPace'] })}
+                className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              >
+                <option value="RELAXED">Relaxed</option>
+                <option value="BALANCED">Balanced</option>
+                <option value="FAST">Fast</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-orange-900">Stay Preference</label>
+              <select
+                value={preferences.accommodationPreference}
+                onChange={(e) => setPreferences({ ...preferences, accommodationPreference: e.target.value as TripPreferences['accommodationPreference'] })}
+                className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              >
+                <option value="BUDGET">Budget</option>
+                <option value="COMFORT">Comfort</option>
+                <option value="LUXURY">Luxury</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-sm font-semibold text-orange-900">Interests (comma separated)</label>
+              <input
+                type="text"
+                value={interestsInput}
+                onChange={(e) => setInterestsInput(e.target.value)}
+                className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                placeholder="history, local food, nature, architecture"
+              />
+            </div>
+            <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-orange-200 bg-white/90 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={preferences.requireGuide}
+                onChange={(e) => setPreferences({ ...preferences, requireGuide: e.target.checked })}
+              />
+              <span className="text-sm font-semibold text-orange-900">I want guide assistance during the trip</span>
+            </label>
           </div>
 
           <div>

@@ -164,6 +164,9 @@ const LoginPage = () => {
         >
           {loading ? 'Please wait...' : mode === 'LOGIN' ? 'Login' : 'Create Account'}
         </button>
+        <p className="pt-1 text-center text-sm text-slate-600">
+          New user? <Link href="/register" className="font-semibold text-orange-700 hover:underline">Create an account</Link>
+        </p>
       </form>
     </div>
   );
