@@ -37,7 +37,6 @@ const seedUsers: StoredUser[] = [
     role: 'HOTEL',
     verified: true,
     price: 5000,
-    features: ['WiFi', 'Pool', 'Breakfast'],
     location: 'Mumbai',
     contactNumber: '9876543210',
     nationalIdDocument: 'hotel_national_id.pdf',
@@ -50,7 +49,6 @@ const seedUsers: StoredUser[] = [
     password: 'restaurant123',
     role: 'RESTAURANT',
     verified: true,
-    features: ['Veg', 'Non-Veg', 'Home Delivery'],
     location: 'Bangalore',
     contactNumber: '9123456780',
     nationalIdDocument: 'restaurant_national_id.pdf',
@@ -138,33 +136,14 @@ export const login = (email: string, password: string, role: UserRole): User | n
   return user;
 };
 
-export const register = (input: RegisterInput): { user?: User; error?: string } => {
-  const users = loadUsers();
-  const exists = users.some((user) => user.email.toLowerCase() === input.email.toLowerCase());
-  if (exists) return { error: 'Email already registered. Please login.' };
-  if (input.role !== 'TOURIST') {
-    if (!input.contactNumber?.trim()) return { error: 'Contact number is required for service providers.' };
-    if (!input.nationalIdDocument?.trim()) return { error: 'National ID document is required for service providers.' };
-    if (!input.licenseDocument?.trim()) return { error: 'Authorized license is required for service providers.' };
-    if (!input.location?.trim()) return { error: 'Location is required for service providers.' };
-    if (!input.price || input.price <= 0) return { error: 'Please provide valid pricing details.' };
-  }
-
-  const storedUser: StoredUser = {
-    id: createId(),
-    name: input.name.trim(),
-    email: input.email.trim().toLowerCase(),
-    password: input.password,
-    role: input.role,
-    verified: input.role === 'TOURIST',
-    location: input.location,
-    latitude: input.latitude,
-    longitude: input.longitude,
-    contactNumber: input.contactNumber,
-    nationalIdDocument: input.nationalIdDocument,
-    licenseDocument: input.licenseDocument,
-    price: input.price,
-    features: input.features,
+export const register = (user: Partial<User>): User => {
+  const newUser: User = {
+    id: Math.random().toString(36).substr(2, 9),
+    name: user.name || '',
+    email: user.email || '',
+    role: user.role || 'TOURIST',
+    verified: user.role === 'TOURIST',
+    ...user,
   };
 
   const nextUsers = [...users, storedUser];

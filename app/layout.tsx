@@ -27,10 +27,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-transparent text-slate-900 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
         <Navbar />
-        <main className="mx-auto max-w-7xl px-4 pt-24 pb-8">
+        <main className="pt-20 px-4 max-w-7xl mx-auto pb-10">
           {children}
         </main>
       </body>

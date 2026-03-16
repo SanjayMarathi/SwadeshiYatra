@@ -2,80 +2,172 @@
 
 import React, { useState } from 'react';
 import { UserRole } from '@/types';
-import Link from 'next/link';
-import { login } from '@/lib/auth';
 
 const LoginPage = () => {
+  const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('TOURIST');
+  const [location, setLocation] = useState('');
+  const [country, setCountry] = useState('');
+  const [price, setPrice] = useState<number>(0);
+  const [expertise, setExpertise] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = login(email, password, role);
-    if (user) {
-      window.location.href = '/';
-    } else {
-      setError('Invalid credentials. Check email, password, and role.');
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const endpoint = mode === 'LOGIN' ? '/api/auth/login' : '/api/auth/register';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          location,
+          country,
+          price: role === 'GUIDE' ? price : undefined,
+          expertise: role === 'GUIDE' ? expertise : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || 'Authentication failed');
+      } else {
+        setSuccess(mode === 'LOGIN' ? 'Login successful' : 'Registration successful');
+        window.location.href = role === 'GUIDE' ? '/dashboard' : '/planner';
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="relative mx-auto mt-16 max-w-lg">
-      <div className="absolute -left-8 -top-8 h-28 w-28 rounded-full bg-orange-300/35 blur-2xl" />
-      <div className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full bg-amber-300/35 blur-2xl" />
-      <div className="theme-card relative rounded-3xl p-8 shadow-xl">
-      <h1 className="mb-2 text-center text-3xl font-bold text-gradient">Login to SwadeshiYatra</h1>
-      <p className="mb-6 text-center text-sm text-slate-600">Use your account to continue planning or managing services.</p>
-      <form onSubmit={handleLogin} className="space-y-4">
+    <div className="max-w-xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border border-blue-100 text-blue-900">
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">SwadeshiYatra Access</h1>
+      <div className="grid grid-cols-2 gap-2 mb-6">
+        <button onClick={() => setMode('LOGIN')} className={`py-2 rounded-lg font-semibold ${mode === 'LOGIN' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}>Login</button>
+        <button onClick={() => setMode('REGISTER')} className={`py-2 rounded-lg font-semibold ${mode === 'REGISTER' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}>Register</button>
+      </div>
+      <form onSubmit={submit} className="space-y-4">
+        {mode === 'REGISTER' && (
+          <div>
+            <label className="block text-sm font-medium text-blue-800 mb-1">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+        )}
         <div>
-          <label className="mb-1 block text-sm font-semibold text-orange-900">Email</label>
+          <label className="block text-sm font-medium text-blue-800 mb-1">Email</label>
           <input 
             type="email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+            className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
             required
-            placeholder="tourist@example.com"
+            placeholder="your@email.com"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-semibold text-orange-900">Password</label>
-          <input 
-            type="password" 
+          <label className="block text-sm font-medium text-blue-800 mb-1">Password</label>
+          <input
+            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+            className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
             required
-            placeholder="Enter password"
+            minLength={6}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-semibold text-orange-900">Login Role</label>
+          <label className="block text-sm font-medium text-blue-800 mb-1">Role</label>
           <select 
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full rounded-xl border border-orange-200 bg-white p-3 text-orange-900 focus:outline-none focus:ring-2 focus:ring-orange-300"
+            className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
           >
-            <option className="text-orange-900" value="TOURIST">Tourist</option>
-            <option className="text-orange-900" value="HOTEL">Hotel</option>
-            <option className="text-orange-900" value="RESTAURANT">Restaurant</option>
-            <option className="text-orange-900" value="GUIDE">Guide</option>
+            <option value="TOURIST">Tourist</option>
+            <option value="GUIDE">Guide</option>
           </select>
         </div>
-        {error && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-500">{error}</p>}
+        {mode === 'REGISTER' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-blue-800 mb-1">City in India</label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-blue-800 mb-1">Country</label>
+                <input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+            </div>
+            {role === 'GUIDE' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-blue-800 mb-1">Price per day (INR)</label>
+                  <input
+                    type="number"
+                    value={price}
+                    onChange={(e) => setPrice(Number(e.target.value))}
+                    className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-blue-800 mb-1">Expertise</label>
+                  <input
+                    type="text"
+                    value={expertise}
+                    onChange={(e) => setExpertise(e.target.value)}
+                    className="w-full p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+        {success && <p className="text-green-600 text-sm mt-2">{success}</p>}
         <button 
           type="submit" 
-          className="theme-button w-full rounded-xl py-3 font-bold"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
+          disabled={loading}
         >
-          Login
+          {loading ? 'Please wait...' : mode === 'LOGIN' ? 'Login' : 'Create Account'}
         </button>
         <p className="pt-1 text-center text-sm text-slate-600">
           New user? <Link href="/register" className="font-semibold text-orange-700 hover:underline">Create an account</Link>
         </p>
       </form>
-      </div>
     </div>
   );
 };

@@ -6,8 +6,9 @@ export interface User {
   email: string;
   role: UserRole;
   verified: boolean;
-  price?: number; // For guides and hotels
-  features?: string[]; // For hotels and restaurants
+  price?: number;
+  expertise?: string;
+  country?: string;
   location?: string;
   latitude?: number;
   longitude?: number;
@@ -34,12 +35,7 @@ export interface TripPreferences {
   durationDays: number;
   cities: string[];
   places: TouristPlace[];
-  startCity: string;
-  numberOfTravelers: number;
-  tripPace: 'RELAXED' | 'BALANCED' | 'FAST';
-  accommodationPreference: 'BUDGET' | 'COMFORT' | 'LUXURY';
-  interests: string[];
-  requireGuide: boolean;
+  originCountry: string;
   foodPreference: 'VEG' | 'NON-VEG' | 'BOTH';
   travelPreference: 'PUBLIC' | 'PRIVATE' | 'BOTH';
 }
@@ -59,9 +55,14 @@ export interface ItineraryItem {
   distanceKm?: number;
   historyInfo?: string;
   suggestedGuide?: string;
-  suggestedGuidePrice?: number;
-  suggestedHotel?: string;
-  suggestedRestaurant?: string;
+  routeFrom?: string;
+  routeTo?: string;
+  entryFee?: number;
+  transportCost?: number;
+  guideFee?: number;
+  totalCost?: number;
+  highlights?: string[];
+  imageUrl?: string;
 }
 
 export interface FeasibilityResult {
