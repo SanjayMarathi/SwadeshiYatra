@@ -1,8 +1,26 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --background: #fffaf0;
-  --foreground: #2a1710;
+  /* Tricolor India palette */
+  --sw-saffron:       #FF7A00;
+  --sw-saffron-light: #FFA040;
+  --sw-saffron-dark:  #CC5C00;
+  --sw-blue:          #1E3A8A;
+  --sw-blue-light:    #3B5FBE;
+  --sw-blue-dark:     #13275E;
+  --sw-red:           #C41230;
+  --sw-red-light:     #E0314E;
+  --sw-red-dark:      #960E24;
+  --sw-gold:          #F5A623;
+  --sw-cream:         #FFF8EE;
+  --sw-warm-white:    #FFFCF5;
+
+  --background: var(--sw-warm-white);
+  --foreground: #1A0A00;
+  --card-bg: #FFFFFF;
+  --card-border: rgba(255,122,0,0.18);
+  --muted: #6B5A4E;
 }
 
 @theme inline {
@@ -12,113 +30,313 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ─── Dark Mode ─────────────────────────────────────────────────────────────── */
+[data-theme='dark'] {
+  --background: #0D0D0D;
+  --foreground: #F5EDE0;
+  --card-bg: #1C1C1C;
+  --card-border: rgba(255,122,0,0.2);
+  --muted: #A08070;
+  --sw-cream: #1C1C1C;
+  --sw-warm-white: #0D0D0D;
+}
+
+/* ─── Body ──────────────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse at 5% 8%,  rgba(255,122,0,0.12) 0%, transparent 35%),
+    radial-gradient(ellipse at 95% 10%, rgba(30,58,138,0.08) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 95%, rgba(196,18,48,0.06) 0%, transparent 40%);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), 'Inter', Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme='dark'] body {
+  background-image:
+    radial-gradient(ellipse at 5% 8%,  rgba(255,122,0,0.07) 0%, transparent 35%),
+    radial-gradient(ellipse at 95% 10%, rgba(30,58,138,0.10) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 95%, rgba(196,18,48,0.05) 0%, transparent 40%);
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────────────────── */
 @layer base {
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes floaty {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50%       { transform: translateY(-10px); }
   }
 
-  @keyframes glowPulse {
-    0%, 100% { box-shadow: 0 8px 22px rgba(249, 115, 22, 0.2); }
-    50% { box-shadow: 0 14px 30px rgba(234, 88, 12, 0.3); }
+  @keyframes saffronPulse {
+    0%, 100% { box-shadow: 0 6px 20px rgba(255,122,0,0.22); }
+    50%       { box-shadow: 0 12px 32px rgba(255,122,0,0.40); }
   }
 
   @keyframes shimmer {
     from { background-position: -200% 0; }
-    to { background-position: 200% 0; }
+    to   { background-position: 200% 0; }
   }
 
-  .animate-fadeIn {
-    animation: fadeIn 0.5s ease-out forwards;
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
   }
 
-  .animate-floaty {
-    animation: floaty 5s ease-in-out infinite;
+  @keyframes tipSlide {
+    0%   { opacity: 0; transform: translateY(8px); }
+    12%  { opacity: 1; transform: translateY(0); }
+    88%  { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-8px); }
   }
 
-  .animate-glowPulse {
-    animation: glowPulse 2.5s ease-in-out infinite;
+  /* ─── Animation Classes ─────────────────────────────────────────────────── */
+  .animate-fadeIn       { animation: fadeIn 0.45s ease-out forwards; }
+  .animate-floaty       { animation: floaty 5s ease-in-out infinite; }
+  .animate-saffronPulse { animation: saffronPulse 2.8s ease-in-out infinite; }
+  .animate-tipSlide     { animation: tipSlide 3.5s ease-in-out forwards; }
+  .animate-spin         { animation: spin 0.9s linear infinite; }
+
+  /* ─── Card ──────────────────────────────────────────────────────────────── */
+  .sw-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.06), 0 1px 4px rgba(255,122,0,0.08);
+    border-radius: 1rem;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
   }
 
-  .theme-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 245, 236, 0.96));
-    border: 1px solid rgba(251, 146, 60, 0.24);
-    box-shadow: 0 10px 26px rgba(194, 65, 12, 0.12);
-    backdrop-filter: blur(4px);
+  [data-theme='dark'] .sw-card {
+    box-shadow: 0 4px 18px rgba(0,0,0,0.4), 0 1px 4px rgba(255,122,0,0.1);
   }
 
-  .theme-pill {
-    background: linear-gradient(135deg, rgba(254, 215, 170, 0.38), rgba(251, 146, 60, 0.16));
-    border: 1px solid rgba(251, 146, 60, 0.35);
+  .sw-card:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.10), 0 4px 12px rgba(255,122,0,0.12);
+    border-color: rgba(255,122,0,0.35);
   }
 
-  .theme-button {
-    background: linear-gradient(90deg, #f97316, #ea580c);
+  /* ─── Buttons ───────────────────────────────────────────────────────────── */
+  .sw-btn-primary {
+    background: linear-gradient(135deg, var(--sw-saffron), var(--sw-red));
     color: white;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 0.65rem 1.75rem;
     transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 4px 14px rgba(196,18,48,0.28);
+    border: none;
+    cursor: pointer;
   }
 
-  .theme-button:hover {
+  .sw-btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(194, 65, 12, 0.34);
-    filter: saturate(1.06);
+    box-shadow: 0 8px 22px rgba(196,18,48,0.38);
+    filter: brightness(1.06);
   }
 
-  .theme-button-secondary {
-    background: white;
-    color: #9a3412;
-    border: 1px solid rgba(251, 146, 60, 0.45);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  .sw-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
-  .theme-button-secondary:hover {
+  .sw-btn-secondary {
+    background: var(--card-bg);
+    color: var(--sw-red);
+    border: 1.5px solid rgba(255,122,0,0.4);
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 0.65rem 1.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+  }
+
+  .sw-btn-secondary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(251, 146, 60, 0.28);
+    box-shadow: 0 6px 18px rgba(255,122,0,0.18);
+    border-color: var(--sw-saffron);
   }
 
+  .sw-btn-blue {
+    background: linear-gradient(135deg, var(--sw-blue), var(--sw-blue-light));
+    color: white;
+    font-weight: 700;
+    border-radius: 0.6rem;
+    padding: 0.5rem 1.2rem;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .sw-btn-blue:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+  /* ─── Pill Tags ─────────────────────────────────────────────────────────── */
+  .sw-pill {
+    background: rgba(255,122,0,0.12);
+    border: 1px solid rgba(255,122,0,0.28);
+    color: var(--sw-red-dark);
+    font-weight: 600;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  .sw-pill:hover { background: rgba(255,122,0,0.22); }
+
+  [data-theme='dark'] .sw-pill {
+    background: rgba(255,122,0,0.14);
+    color: var(--sw-saffron-light);
+  }
+
+  /* ─── Input / Select ────────────────────────────────────────────────────── */
+  .sw-input {
+    background: var(--card-bg);
+    border: 1.5px solid rgba(255,122,0,0.3);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--foreground);
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  .sw-input:focus {
+    border-color: var(--sw-saffron);
+    box-shadow: 0 0 0 3px rgba(255,122,0,0.15);
+  }
+
+  /* ─── Hero Gradient ─────────────────────────────────────────────────────── */
+  .sw-hero {
+    background: linear-gradient(135deg,
+      #C41230 0%,
+      #b31025 20%,
+      #FF7A00 60%,
+      #F5A623 100%
+    );
+  }
+
+  [data-theme='dark'] .sw-hero {
+    background: linear-gradient(135deg,
+      #7a0b1c 0%,
+      #960E24 25%,
+      #A85500 65%,
+      #8a6000 100%
+    );
+  }
+
+  /* ─── Section Header ────────────────────────────────────────────────────── */
+  .sw-section-title {
+    color: var(--sw-red);
+    font-weight: 900;
+  }
+
+  [data-theme='dark'] .sw-section-title {
+    color: var(--sw-saffron-light);
+  }
+
+  /* ─── Hover Lift ────────────────────────────────────────────────────────── */
   .hover-lift {
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
 
   .hover-lift:hover {
     transform: translateY(-5px);
-    box-shadow: 0 16px 30px rgba(194, 65, 12, 0.16);
-    border-color: rgba(251, 146, 60, 0.45);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(255,122,0,0.12);
   }
 
-  .text-gradient {
-    background: linear-gradient(90deg, #ea580c, #f59e0b);
+  /* ─── Text Gradient ─────────────────────────────────────────────────────── */
+  .sw-text-gradient {
+    background: linear-gradient(90deg, var(--sw-red), var(--sw-saffron));
     -webkit-background-clip: text;
     color: transparent;
+    background-clip: text;
   }
 
-  .shimmer-strip {
-    background: linear-gradient(110deg, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0.15) 60%);
+  /* ─── Shimmer Skeleton ──────────────────────────────────────────────────── */
+  .sw-shimmer {
+    background: linear-gradient(
+      110deg,
+      rgba(200,200,200,0.15) 20%,
+      rgba(200,200,200,0.35) 40%,
+      rgba(200,200,200,0.15) 60%
+    );
     background-size: 220% 100%;
-    animation: shimmer 2.2s linear infinite;
+    animation: shimmer 1.8s linear infinite;
+    border-radius: 0.5rem;
   }
-}
 
-[data-theme='dark'] {
-  --background: #050505;
-  --foreground: #f8f8f8;
-}
+  [data-theme='dark'] .sw-shimmer {
+    background: linear-gradient(
+      110deg,
+      rgba(255,255,255,0.04) 20%,
+      rgba(255,255,255,0.10) 40%,
+      rgba(255,255,255,0.04) 60%
+    );
+    background-size: 220% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
 
-body {
-  background:
-    radial-gradient(circle at 8% 10%, rgba(253, 186, 116, 0.35) 0%, transparent 30%),
-    radial-gradient(circle at 92% 14%, rgba(251, 146, 60, 0.2) 0%, transparent 28%),
-    linear-gradient(180deg, #fffaf5 0%, #fff3e8 55%, #ffedd5 100%);
-  color: var(--foreground);
-  background-image: linear-gradient(180deg, #fff8e8 0%, #fff2df 55%, #ffeede 100%);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-}
+  /* ─── Tricolor Accent Bar (decorative) ──────────────────────────────────── */
+  .sw-tricolor-bar {
+    background: linear-gradient(90deg,
+      var(--sw-saffron) 0%,
+      var(--sw-saffron) 33.3%,
+      #FFFFFF           33.3%,
+      #FFFFFF           66.6%,
+      var(--sw-blue)    66.6%,
+      var(--sw-blue)    100%
+    );
+    height: 3px;
+    width: 100%;
+    border-radius: 9999px;
+  }
 
-[data-theme='dark'] body {
-  background-image: linear-gradient(180deg, #111111 0%, #050505 100%);
+  /* ─── Info / Budget chips ───────────────────────────────────────────────── */
+  .sw-chip-saffron {
+    background: rgba(255,122,0,0.1);
+    border: 1px solid rgba(255,122,0,0.25);
+    color: var(--sw-saffron-dark);
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .sw-chip-blue {
+    background: rgba(30,58,138,0.08);
+    border: 1px solid rgba(30,58,138,0.2);
+    color: var(--sw-blue);
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .sw-chip-red {
+    background: rgba(196,18,48,0.08);
+    border: 1px solid rgba(196,18,48,0.2);
+    color: var(--sw-red);
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  [data-theme='dark'] .sw-chip-saffron {
+    background: rgba(255,122,0,0.15);
+    color: var(--sw-saffron-light);
+  }
+
+  [data-theme='dark'] .sw-chip-blue {
+    background: rgba(59,95,190,0.15);
+    border-color: rgba(59,95,190,0.3);
+    color: #7FA3F5;
+  }
+
+  [data-theme='dark'] .sw-chip-red {
+    background: rgba(196,18,48,0.15);
+    color: #F06080;
+  }
 }

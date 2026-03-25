@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { User } from '@/types';
-import { getCurrentUser, logout } from '@/lib/auth';
 
 const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -13,14 +12,12 @@ const Navbar = () => {
     }
     return 'light';
   });
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
       const res = await fetch('/api/auth/me', { cache: 'no-store' });
-      if (!res.ok) {
-        setUser(null);
-        return;
-      }
+      if (!res.ok) { setUser(null); return; }
       const data = await res.json();
       setUser(data.user as User);
     };
@@ -32,44 +29,150 @@ const Navbar = () => {
     localStorage.setItem('theme-mode', theme);
   }, [theme]);
 
-  const logout = () => {
+  const handleLogout = () => {
     fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
       window.location.href = '/login';
     });
   };
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(nextTheme);
-  };
-
   return (
-    <nav className="bg-white/95 text-red-900 shadow-md border-b border-orange-100 p-4 flex justify-between items-center fixed w-full top-0 z-50">
-      <Link href="/" className="text-2xl font-black tracking-tight text-red-700">SwadeshiYatra</Link>
-      <div className="flex gap-6 items-center">
-        <Link href="/" className="hover:text-red-600">Home</Link>
-        <Link href="/planner" className="hover:text-red-600">Trip Planner</Link>
-        <button onClick={toggleTheme} className="bg-yellow-50 px-3 py-1 rounded-full border border-yellow-200 hover:bg-yellow-100 transition">
-          {theme === 'dark' ? 'White Mode' : 'Black Mode'}
-        </button>
-        {user ? (
-          <>
-            {user.role !== 'TOURIST' && (
-              <Link href="/dashboard" className="hover:text-red-600">Dashboard</Link>
-            )}
-            <span className="text-red-700">Hello, {user.name} ({user.role})</span>
-            <button 
-              onClick={logout} 
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+    <>
+      <nav
+        style={{
+          background: theme === 'dark'
+            ? 'rgba(15,15,15,0.92)'
+            : 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255,122,0,0.15)',
+          boxShadow: '0 2px 20px rgba(0,0,0,0.08)',
+        }}
+        className="fixed w-full top-0 z-50 transition-all duration-300"
+      >
+        {/* Tricolor stripe */}
+        <div className="sw-tricolor-bar" />
+
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <span className="text-2xl">🇮🇳</span>
+            <span
+              className="text-xl font-black tracking-tight transition-colors"
+              style={{ color: 'var(--sw-red)' }}
             >
-              Logout
+              SwadeshiYatra
+            </span>
+          </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-5">
+            <Link
+              href="/"
+              className="font-semibold text-sm transition-colors hover:opacity-80"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Home
+            </Link>
+            <Link
+              href="/planner"
+              className="font-semibold text-sm transition-colors hover:opacity-80"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Trip Planner
+            </Link>
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              title="Toggle dark mode"
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border transition-all duration-200"
+              style={{
+                borderColor: 'rgba(255,122,0,0.35)',
+                background: theme === 'dark' ? 'rgba(255,122,0,0.12)' : 'rgba(255,122,0,0.06)',
+                color: 'var(--sw-saffron)',
+              }}
+            >
+              {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
             </button>
-          </>
-        ) : (
-          <Link href="/login" className="bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700">Login / Register</Link>
+
+            {user ? (
+              <>
+                {user.role !== 'TOURIST' && (
+                  <Link href="/dashboard" className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
+                    Dashboard
+                  </Link>
+                )}
+                <span className="text-sm font-semibold" style={{ color: 'var(--sw-saffron)' }}>
+                  {user.name}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="sw-btn-primary text-sm px-4 py-1.5"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="sw-btn-primary text-sm px-5 py-1.5"
+                style={{ borderRadius: '9999px', display: 'inline-block' }}
+              >
+                Login / Register
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 rounded-lg"
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{ color: 'var(--sw-red)' }}
+          >
+            {menuOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div
+            className="md:hidden px-4 pb-4 flex flex-col gap-3 border-t"
+            style={{ borderColor: 'rgba(255,122,0,0.15)', background: theme === 'dark' ? 'rgba(20,20,20,0.97)' : 'rgba(255,255,255,0.97)' }}
+          >
+            <Link href="/" className="font-semibold py-2 text-sm" style={{ color: 'var(--foreground)' }} onClick={() => setMenuOpen(false)}>Home</Link>
+            <Link href="/planner" className="font-semibold py-2 text-sm" style={{ color: 'var(--foreground)' }} onClick={() => setMenuOpen(false)}>Trip Planner</Link>
+            <button
+              onClick={() => { setTheme(theme === 'light' ? 'dark' : 'light'); setMenuOpen(false); }}
+              className="text-left font-semibold py-2 text-sm"
+              style={{ color: 'var(--sw-saffron)' }}
+            >
+              {theme === 'dark' ? '☀️ Switch to Light Mode' : '🌙 Switch to Dark Mode'}
+            </button>
+            {user ? (
+              <>
+                {user.role !== 'TOURIST' && (
+                  <Link href="/dashboard" className="font-semibold py-2 text-sm" style={{ color: 'var(--foreground)' }} onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                )}
+                <button onClick={handleLogout} className="sw-btn-primary text-sm w-full text-center py-2">Logout</button>
+              </>
+            ) : (
+              <Link href="/login" className="sw-btn-primary text-sm text-center py-2 block" onClick={() => setMenuOpen(false)}>Login / Register</Link>
+            )}
+          </div>
         )}
-      </div>
-    </nav>
+      </nav>
+
+      {/* Spacer to offset fixed navbar */}
+      <div style={{ height: '60px' }} />
+    </>
   );
 };
 

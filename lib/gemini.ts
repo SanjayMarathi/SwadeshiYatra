@@ -14,15 +14,73 @@ const GEMINI_ALERT = "Gemini not giving data alert";
 
 const makeGeminiError = (details: unknown) => new Error(`${GEMINI_ALERT}: ${String(details).slice(0, 300)}`);
 
+/**
+ * Balanced-bracket JSON extractor.
+ * Finds the first complete JSON array ([...]) or object ({...}) in the text,
+ * properly handling nested brackets inside string values so that a `]` or `}`
+ * inside a string value does NOT prematurely close the outer container.
+ */
+const extractJsonBlock = (text: string, startChar: '[' | '{'): string | null => {
+  const endChar = startChar === '[' ? ']' : '}';
+  const start = text.indexOf(startChar);
+  if (start === -1) return null;
 
+  let depth = 0;
+  let inString = false;
+  let escape = false;
 
-const extractJson = <T>(text: string, pattern: RegExp): T => {
-  const stripped = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-  const match = stripped.match(pattern);
-  if (!match?.[0]) {
-    throw makeGeminiError("Invalid JSON response");
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === '\\' && inString) {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === startChar) depth++;
+    else if (ch === endChar) {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
   }
-  return JSON.parse(match[0]) as T;
+  return null;
+};
+
+const sanitizeJsonString = (raw: string): string => {
+  // Strip markdown code fences
+  let s = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  // Remove trailing commas before ] or }
+  s = s.replace(/,\s*([}\]])/g, '$1');
+  // Remove control characters
+  s = s.replace(/[\u0000-\u001F\u007F]+/g, ' ');
+  return s;
+};
+
+const extractJson = <T>(text: string, kind: 'array' | 'object'): T => {
+  const cleaned = sanitizeJsonString(text);
+  const startChar = kind === 'array' ? '[' : '{';
+  const block = extractJsonBlock(cleaned, startChar);
+
+  if (!block) {
+    console.error("JSON extraction failed. Raw snippet:", cleaned.substring(0, 300));
+    throw makeGeminiError("Invalid JSON response — no balanced bracket block found");
+  }
+
+  try {
+    return JSON.parse(block) as T;
+  } catch (err) {
+    console.error("JSON parse failed. Block snippet:", block.substring(0, 400), "...");
+    throw new Error(`JSON format error: ${(err as Error).message}`);
+  }
 };
 
 const generateText = async (prompt: string): Promise<string> => {
@@ -56,6 +114,7 @@ export const getTouristPlaces = async (city: string): Promise<TouristPlace[]> =>
   const prompt = `List exactly 8 real and currently relevant tourist attractions in ${city}, India.
 Use only factual place names and details.
 Do not invent generic places.
+CRITICAL: Use only simple ASCII characters in string values. Do not use unescaped double quotes inside values. No trailing commas.
 
 Respond ONLY as valid JSON array:
 [{"name":"Exact place","rating":4.7,"fameScore":9,"description":"Accurate description","historyInfo":"Brief historical context","bestTime":"MORNING","type":"HISTORICAL"}]
@@ -64,7 +123,7 @@ Allowed types: TEMPLE, BEACH, MUSEUM, PARK, HISTORICAL, OTHER
 Allowed bestTime: MORNING, AFTERNOON, EVENING, NIGHT`;
 
   const text = await generateText(prompt);
-  const places = extractJson<TouristPlace[]>(text, /\[[\s\S]*?\]/);
+  const places = extractJson<TouristPlace[]>(text, 'array');
   if (!Array.isArray(places) || places.length === 0) {
     throw makeGeminiError("No places returned");
   }
@@ -110,13 +169,14 @@ export const getCityPlannerData = async (city: string): Promise<CityPlannerData>
   const prompt = `Expert Indian travel guide for ${city}, India.
 Provide only real and factual information.
 Use actual named places only.
+CRITICAL: Use only simple ASCII characters in string values. Do not use unescaped double quotes inside values. No trailing commas.
 
 Respond ONLY as valid JSON:
-{"cityOverview":"2 sentences","bestTimeToVisit":"e.g. Oct–Mar","howToReach":"Air/Train/Road briefly","localTransport":"Options","attractions":[{"name":"Exact real name","type":"Historical","description":"3-4 sentences","highlights":["h1","h2","h3","h4"],"visitingHours":"9AM-5PM","bestSeason":"Oct-Mar","timeNeeded":"2hr","entryFeeAdult":100,"entryFeeChild":50,"entryFeeForeign":500,"nearbyAttractions":["a","b"],"tips":["t1","t2"],"rating":4.7,"fameScore":9}],"totalBudgetEstimate":"₹2000-4000/person/day","culturalTips":["c1","c2","c3"]}
+{"cityOverview":"2 sentences","bestTimeToVisit":"e.g. Oct-Mar","howToReach":"Air/Train/Road briefly","localTransport":"Options","attractions":[{"name":"Exact real name","type":"Historical","description":"3-4 sentences","highlights":["h1","h2","h3","h4"],"visitingHours":"9AM-5PM","bestSeason":"Oct-Mar","timeNeeded":"2hr","entryFeeAdult":100,"entryFeeChild":50,"entryFeeForeign":500,"nearbyAttractions":["a","b"],"tips":["t1","t2"],"rating":4.7,"fameScore":9}],"totalBudgetEstimate":"Rs 2000-4000/person/day","culturalTips":["c1","c2","c3"]}
 Give 8 real attractions for ${city}. All fees in INR.`;
 
   const text = await generateText(prompt);
-  const data = extractJson<CityPlannerData>(text, /\{[\s\S]*\}/);
+  const data = extractJson<CityPlannerData>(text, 'object');
   if (!data.attractions?.length) {
     throw makeGeminiError("No city attraction data returned");
   }
@@ -140,29 +200,32 @@ type PlannerInput = Pick<
 
 export const analyzeFeasibility = async (data: PlannerInput): Promise<FeasibilityResult> => {
   const prompt = `Analyze India trip feasibility:
-From: ${data.originCountry}, Budget: ₹${data.budget}, Duration: ${data.durationDays}d
-Route: ${data.cities.join("→")}, Places: ${data.places.map((p) => p.name).join(", ")}
+From: ${data.originCountry}, Budget: Rs ${data.budget}, Duration: ${data.durationDays}d
+Route: ${data.cities.join("->")}, Places: ${data.places.map((p) => p.name).join(", ")}
 Transport: ${data.travelPreference}
+CRITICAL: Use only simple ASCII characters. No trailing commas. No unescaped quotes inside values.
 
 Respond ONLY as JSON:
 {"isPossible":true,"reason":"1-2 sentences","suggestions":["tip1","tip2","tip3"],"estimatedCost":45000,"estimatedTime":36}`;
 
   const text = await generateText(prompt);
-  return extractJson<FeasibilityResult>(text, /\{[\s\S]*\}/);
+  return extractJson<FeasibilityResult>(text, 'object');
 };
 
 export const generateItinerary = async (data: PlannerInput): Promise<ItineraryItem[]> => {
   const prompt = `Create a detailed India trip itinerary:
-Route: ${data.cities.join("→")}
+Route: ${data.cities.join("->")}
 Places: ${data.places.map((p) => p.name).join(", ")}
 Duration: ${data.durationDays}d, Transport: ${data.travelPreference}
 
 Use real Indian prices. Give 5 numbered point-wise steps per stop.
+CRITICAL: Use only simple ASCII characters. No trailing commas. No unescaped quotes inside values.
+
 Respond ONLY as JSON array:
-[{"day":1,"time":"09:00 AM","place":"Real name","city":"City","activity":"Brief","transport":"Mode","routeFrom":"From","routeTo":"To","suggestedGuide":"Note","entryFee":500,"transportCost":1200,"guideFee":0,"totalCost":1700,"highlights":["1. Step one","2. Step two","3. Step three","4. Step four","5. Step five"],"imageUrl":""}]`;
+[{"day":1,"time":"09:00 AM","place":"Real name","city":"City","activity":"Brief","transport":"Mode","routeFrom":"From","routeTo":"To","suggestedGuide":"Note","entryFee":500,"transportCost":1200,"guideFee":0,"totalCost":1700,"highlights":["1. Step one","2. Step two"],"imageUrl":""}]`;
 
   const text = await generateText(prompt);
-  const plan = extractJson<ItineraryItem[]>(text, /\[[\s\S]*?\]/);
+  const plan = extractJson<ItineraryItem[]>(text, 'array');
   if (!Array.isArray(plan) || plan.length === 0) {
     throw makeGeminiError("No itinerary returned");
   }
