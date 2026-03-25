@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ places });
   } catch (err) {
     console.error("[API/places] Error:", err);
-    return NextResponse.json({ error: "Failed to get places" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Gemini not giving data alert";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

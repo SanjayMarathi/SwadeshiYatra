@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ feasibility, itinerary });
   } catch (err) {
     console.error("[API/plan] Error:", err);
-    return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Gemini not giving data alert";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

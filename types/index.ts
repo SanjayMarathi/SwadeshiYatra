@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   verified: boolean;
   price?: number;
+  features?: string[];
   expertise?: string;
   country?: string;
   location?: string;
@@ -38,6 +39,10 @@ export interface TripPreferences {
   originCountry: string;
   foodPreference: 'VEG' | 'NON-VEG' | 'BOTH';
   travelPreference: 'PUBLIC' | 'PRIVATE' | 'BOTH';
+  tripPace?: 'RELAXED' | 'BALANCED' | 'FAST';
+  accommodationPreference?: 'BUDGET' | 'COMFORT' | 'LUXURY';
+  interests?: string[];
+  requireGuide?: boolean;
 }
 
 export interface ItineraryItem {

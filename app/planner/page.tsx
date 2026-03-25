@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useMemo, useState, useEffect } from 'react';
+import React, { Suspense, useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { TouristPlace, TripPreferences, FeasibilityResult, ItineraryItem, User } from '@/types';
@@ -10,8 +10,9 @@ import { CityPlannerData } from '@/lib/gemini';
 
 type GuideOption = { id: string; name: string; city: string; pricePerDay: number; expertise: string };
 
-const stableImage = (place: string, city: string) =>
-  `https://picsum.photos/seed/${encodeURIComponent(`${place}-${city}`)}/800/400`;
+type CitySuggestion = { name: string; placeId: string; description: string };
+
+const FALLBACK_IMAGE = '/placeholder-travel.svg';
 
 const googlePhotos = (place: string, city: string) =>
   `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(`${place} ${city} India`)}`;
@@ -19,26 +20,239 @@ const googlePhotos = (place: string, city: string) =>
 const googleMap = (place: string, city: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place}, ${city}, India`)}`;
 
-const INDIAN_CITIES = [
-  'Agra', 'Ahmedabad', 'Amritsar', 'Aurangabad', 'Bengaluru', 'Bhopal', 'Bhubaneswar', 'Chandigarh',
-  'Chennai', 'Coimbatore', 'Darjeeling', 'Dehradun', 'Delhi', 'Gangtok', 'Goa', 'Guwahati', 'Gwalior',
-  'Hyderabad', 'Indore', 'Jaipur', 'Jaisalmer', 'Jammu', 'Jodhpur', 'Kochi', 'Kolkata', 'Leh', 'Lucknow',
-  'Madurai', 'Manali', 'Mangalore', 'Mumbai', 'Munnar', 'Mysuru', 'Nagpur', 'Nainital', 'Nashik', 'Pondicherry',
-  'Pune', 'Rishikesh', 'Shimla', 'Srinagar', 'Surat', 'Thiruvananthapuram', 'Udaipur', 'Varanasi', 'Vijayawada', 'Visakhapatnam',
-];
+// Quick-pick buttons (static shortcuts for popular cities)
+const POPULAR_CITIES = ['Jaipur', 'Varanasi', 'Mumbai', 'Delhi', 'Goa', 'Agra', 'Udaipur', 'Kochi'];
+
+const TYPE_FALLBACKS: Record<string, string> = {
+  lake: 'https://images.unsplash.com/photo-1543881515-3885bb326848?w=800&q=80',
+  river: 'https://images.unsplash.com/photo-1437482078695-73f550074fa8?w=800&q=80',
+  dam: 'https://images.unsplash.com/photo-1596701540348-73dd9818ae41?w=800&q=80',
+  fort: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800&q=80',
+  church: 'https://images.unsplash.com/photo-1548625361-ecac3a6db9ce?w=800&q=80',
+  beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+  temple: 'https://images.unsplash.com/photo-1514222288957-49fac7bfde0a?w=800&q=80',
+  museum: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=800&q=80',
+  park: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80',
+  garden: 'https://images.unsplash.com/photo-1585320806297-9794b3e4ce11?w=800&q=80',
+  palace: 'https://images.unsplash.com/photo-1548625361-ecac3a6db9ce?w=800&q=80',
+  default: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&q=80'
+};
+
+// ─── Google Places Photo Hook ────────────────────────────────────────────────
+
+/** Cache map to avoid re-fetching photos for the same place */
+const globalPhotoCache: Record<string, string> = {};
+
+function useGooglePhoto(placeName: string, city: string): string {
+  const key = `${placeName}__${city}`;
+  const [url, setUrl] = useState(globalPhotoCache[key] || '');
+
+  useEffect(() => {
+    if (!placeName || !city) return;
+    if (globalPhotoCache[key]) { setUrl(globalPhotoCache[key]); return; }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/place-photo?place=${encodeURIComponent(placeName)}&city=${encodeURIComponent(city)}`
+        );
+        const data = await res.json();
+        const photo = data.photoUrl || '';
+        if (!cancelled) {
+          globalPhotoCache[key] = photo;
+          setUrl(photo);
+        }
+      } catch {
+        if (!cancelled) setUrl('');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [placeName, city, key]);
+
+  return url;
+}
+
+/** Component wrapper for lazy-loaded Google Place Photo */
+function PlaceImage({ placeName, city, type, className }: { placeName: string; city: string; type?: string; className?: string }) {
+  const photoUrl = useGooglePhoto(placeName, city);
+  const [imgError, setImgError] = useState(false);
+
+  if (!photoUrl || imgError) {
+    return (
+      <a 
+        href={googlePhotos(placeName, city)} 
+        target="_blank" 
+        rel="noreferrer" 
+        title="Tap to load image"
+        className={`w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-orange-50 text-orange-400 hover:text-red-500 hover:bg-orange-100 transition p-4 gap-2`}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+        <span className="font-semibold text-sm text-center">Tap to load image</span>
+      </a>
+    );
+  }
+
+  return (
+    <Image
+      src={photoUrl}
+      alt={placeName}
+      fill
+      className={className || 'object-cover'}
+      unoptimized
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
+// ─── City Autocomplete Hook ─────────────────────────────────────────────────
+
+function useCityAutocomplete() {
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const search = useCallback((q: string) => {
+    setQuery(q);
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (q.trim().length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    timerRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/city-autocomplete?q=${encodeURIComponent(q.trim())}`);
+        const data = await res.json();
+        setSuggestions(data.cities || []);
+        setShowDropdown(true);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+  }, []);
+
+  const clear = useCallback(() => {
+    setQuery('');
+    setSuggestions([]);
+    setShowDropdown(false);
+  }, []);
+
+  return { query, setQuery: search, suggestions, loading, showDropdown, setShowDropdown, clear, rawSetQuery: setQuery };
+}
+
+// ─── Autocomplete Dropdown Component ────────────────────────────────────────
+
+function CityAutocompleteInput({
+  value,
+  onSearch,
+  suggestions,
+  loading,
+  showDropdown,
+  setShowDropdown,
+  onSelect,
+  onSubmit,
+  placeholder,
+  listId,
+}: {
+  value: string;
+  onSearch: (q: string) => void;
+  suggestions: CitySuggestion[];
+  loading: boolean;
+  showDropdown: boolean;
+  setShowDropdown: (v: boolean) => void;
+  onSelect: (city: string) => void;
+  onSubmit: () => void;
+  placeholder: string;
+  listId: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [setShowDropdown]);
+
+  return (
+    <div ref={containerRef} className="relative flex-1 min-w-[220px]">
+      <input
+        id={listId}
+        type="text"
+        value={value}
+        onChange={(e) => onSearch(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            setShowDropdown(false);
+            onSubmit();
+          }
+        }}
+        onFocus={() => { if (suggestions.length > 0) setShowDropdown(true); }}
+        placeholder={placeholder}
+        className="w-full p-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+        autoComplete="off"
+      />
+      {loading && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {showDropdown && suggestions.length > 0 && (
+        <ul className="absolute z-50 w-full mt-1 bg-white border border-orange-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          {suggestions.map((s) => (
+            <li key={s.placeId}>
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2.5 hover:bg-orange-50 text-sm transition flex flex-col"
+                onClick={() => {
+                  onSelect(s.name);
+                  setShowDropdown(false);
+                }}
+              >
+                <span className="font-semibold text-gray-800">{s.name}</span>
+                {s.description !== s.name && (
+                  <span className="text-xs text-gray-500">{s.description}</span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // ─── API helpers (server-side routes) ────────────────────────────────────────
 
 async function fetchPlaces(city: string): Promise<TouristPlace[]> {
   const res = await fetch(`/api/places?city=${encodeURIComponent(city)}`);
-  if (!res.ok) throw new Error(`Places API error: ${res.status}`);
+  if (!res.ok) {
+    const payload = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error || `Places API error: ${res.status}`);
+  }
   const { places } = await res.json();
   return places;
 }
 
 async function fetchCityGuide(city: string): Promise<CityPlannerData> {
   const res = await fetch(`/api/city-guide?city=${encodeURIComponent(city)}`);
-  if (!res.ok) throw new Error(`City guide API error: ${res.status}`);
+  if (!res.ok) {
+    const payload = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error || `City guide API error: ${res.status}`);
+  }
   const { data } = await res.json();
   return data;
 }
@@ -52,28 +266,34 @@ async function fetchPlan(preferences: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preferences),
   });
-  if (!res.ok) throw new Error(`Plan API error: ${res.status}`);
+  if (!res.ok) {
+    const payload = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error || `Plan API error: ${res.status}`);
+  }
   return res.json();
 }
 
 // ─── City Planner ────────────────────────────────────────────────────────────
 
 function CityPlannerMode({ initialCity }: { initialCity: string }) {
-  const [cityInput, setCityInput] = useState(initialCity);
+  const autocomplete = useCityAutocomplete();
   const [selectedCity, setSelectedCity] = useState('');
   const [cityData, setCityData] = useState<CityPlannerData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const geminiAlert = 'Gemini not giving data alert';
 
   const loadCity = async (city: string) => {
     if (!city.trim()) return;
     setLoading(true); setError(''); setCityData(null); setSelectedCity(city.trim());
+    autocomplete.clear();
     try {
       const data = await fetchCityGuide(city.trim());
       setCityData(data);
     } catch (e) {
       console.error(e);
-      setError('Could not load city data. Please try again.');
+      const message = e instanceof Error ? e.message : 'Could not load city data. Please try again.';
+      setError(message.includes('Gemini not giving data alert') ? geminiAlert : message);
     } finally {
       setLoading(false);
     }
@@ -87,20 +307,26 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
         <h2 className="text-2xl font-black text-red-700 mb-1">City Deep Dive</h2>
         <p className="text-gray-600 text-sm mb-4">Select any Indian city to get a complete AI-powered travel guide with real attractions, entry fees, visiting hours, and budget tips.</p>
         <div className="flex flex-wrap gap-3">
-          <input type="text" value={cityInput} onChange={(e) => setCityInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && loadCity(cityInput)}
+          <CityAutocompleteInput
+            value={autocomplete.query}
+            onSearch={autocomplete.setQuery}
+            suggestions={autocomplete.suggestions}
+            loading={autocomplete.loading}
+            showDropdown={autocomplete.showDropdown}
+            setShowDropdown={autocomplete.setShowDropdown}
+            onSelect={(city) => { autocomplete.rawSetQuery(city); loadCity(city); }}
+            onSubmit={() => loadCity(autocomplete.query)}
             placeholder="Type city name (e.g. Jaipur, Varanasi, Goa)"
-            className="flex-1 min-w-[220px] p-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
-            list="cp-city-list" />
-          <datalist id="cp-city-list">{INDIAN_CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-          <button onClick={() => loadCity(cityInput)} disabled={loading}
+            listId="cp-city-input"
+          />
+          <button onClick={() => loadCity(autocomplete.query)} disabled={loading}
             className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-7 py-3 rounded-lg font-bold hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition">
             {loading ? 'Loading AI Guide...' : 'Get City Guide'}
           </button>
         </div>
         <div className="flex flex-wrap gap-2 mt-4">
-          {['Jaipur', 'Varanasi', 'Mumbai', 'Delhi', 'Goa', 'Agra', 'Udaipur', 'Kochi'].map((c) => (
-            <button key={c} onClick={() => { setCityInput(c); loadCity(c); }}
+          {POPULAR_CITIES.map((c) => (
+            <button key={c} onClick={() => { autocomplete.rawSetQuery(c); loadCity(c); }}
               className="px-3 py-1 rounded-full bg-yellow-100 hover:bg-yellow-200 text-red-800 text-sm font-semibold transition">
               {c}
             </button>
@@ -153,9 +379,9 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
               {(cityData.attractions || []).map((attr, i) => (
                 <div key={i} className="bg-white rounded-2xl border border-orange-100 shadow-sm overflow-hidden">
                   <div className="relative w-full h-48">
-                    <Image src={stableImage(attr.name, selectedCity)} alt={attr.name} fill className="object-cover" unoptimized />
-                    <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">{attr.type}</div>
-                    <div className="absolute top-2 right-2 bg-yellow-400 text-gray-900 text-xs font-black px-2 py-1 rounded-full">★ {attr.rating} · {attr.fameScore}/10</div>
+                    <PlaceImage placeName={attr.name} city={selectedCity} type={attr.type} className="object-cover" />
+                    <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">{attr.type}</div>
+                    <div className="absolute top-2 right-2 bg-yellow-400 text-gray-900 text-xs font-black px-2 py-1 rounded-full pointer-events-none">★ {attr.rating} · {attr.fameScore}/10</div>
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-2">
                       <h4 className="text-white font-black text-lg">{attr.name}</h4>
                     </div>
@@ -208,9 +434,14 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
                       <p className="text-xs text-gray-600 mb-3"><span className="font-bold text-orange-600">Nearby: </span>{attr.nearbyAttractions.join(', ')}</p>
                     )}
 
-                    <div className="flex gap-4 text-sm">
-                      <a href={googlePhotos(attr.name, selectedCity)} target="_blank" rel="noreferrer" className="text-red-700 font-semibold underline">Google Photos</a>
-                      <a href={googleMap(attr.name, selectedCity)} target="_blank" rel="noreferrer" className="text-red-700 font-semibold underline">Google Maps</a>
+                    <div className="flex justify-end pt-2">
+                      <a href={googleMap(attr.name, selectedCity)} target="_blank" rel="noreferrer" title="Map view" className="inline-flex items-center gap-1.5 text-green-700 font-bold hover:text-green-900 transition bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                        <span>Map View</span>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -227,13 +458,14 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
 
 function JourneyPlannerMode() {
   const [step, setStep] = useState(1);
-  const [cityInput, setCityInput] = useState('');
+  const autocomplete = useCityAutocomplete();
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [cityPlaces, setCityPlaces] = useState<Record<string, TouristPlace[]>>({});
   const [selectedPlaces, setSelectedPlaces] = useState<TouristPlace[]>([]);
   const [guideMap, setGuideMap] = useState<Record<string, GuideOption[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const geminiAlert = 'Gemini not giving data alert';
   const [selectedGuides, setSelectedGuides] = useState<Record<string, string>>({});
   const [preferences, setPreferences] = useState<TripPreferences>({
     budget: 30000, durationDays: 5, cities: [], places: [], originCountry: 'India', foodPreference: 'BOTH', travelPreference: 'BOTH',
@@ -241,7 +473,6 @@ function JourneyPlannerMode() {
   const [feasibility, setFeasibility] = useState<FeasibilityResult | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [interestsInput, setInterestsInput] = useState('history, food, architecture');
-  const [guideRequests, setGuideRequests] = useState<Record<string, boolean>>({});
 
   const loadGuides = async (cities: string[]) => {
     if (!cities.length) { setGuideMap({}); return; }
@@ -262,8 +493,9 @@ function JourneyPlannerMode() {
 
   const addCity = async (raw: string) => {
     const city = raw.trim();
-    if (!city || selectedCities.includes(city)) { setCityInput(''); return; }
+    if (!city || selectedCities.includes(city)) { autocomplete.clear(); return; }
     setError(''); setLoading(true);
+    autocomplete.clear();
     try {
       const places = await fetchPlaces(city);
       const next = [...selectedCities, city];
@@ -274,8 +506,10 @@ function JourneyPlannerMode() {
       }
       setSelectedCities(next);
       await loadGuides(next);
-      setCityInput('');
-    } catch { setError('Could not load city data. Please try again.'); }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Could not load city data. Please try again.';
+      setError(message.includes('Gemini not giving data alert') ? geminiAlert : message);
+    }
     finally { setLoading(false); }
   };
 
@@ -313,7 +547,7 @@ function JourneyPlannerMode() {
           suggestedGuide: guide ? `${guide.name} — ₹${guide.pricePerDay}/day` : item.suggestedGuide,
           entryFee, transportCost, guideFee,
           totalCost: item.totalCost ?? entryFee + transportCost + guideFee,
-          imageUrl: item.imageUrl || stableImage(item.place, item.city),
+          imageUrl: item.imageUrl || '',
           highlights: item.highlights?.length ? item.highlights : [
             `1. Reach ${item.place} via ${item.transport || 'local transport'}.`,
             '2. Collect entry tickets at the gate.',
@@ -327,11 +561,13 @@ function JourneyPlannerMode() {
       setFeasibility(feas ?? { isPossible: total <= preferences.budget, reason: total <= preferences.budget ? 'Route feasible.' : 'Exceeds budget.', estimatedCost: total, estimatedTime: normalized.length * 3 });
       setItinerary(normalized);
       setStep(3);
-    } catch { setError('Unable to generate plan. Please retry.'); }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Unable to generate plan. Please retry.';
+      setError(message.includes('Gemini not giving data alert') ? geminiAlert : message);
+    }
     finally { setLoading(false); }
   };
 
-  const quickCities = INDIAN_CITIES.filter((c) => c.toLowerCase().includes(cityInput.toLowerCase()) && !selectedCities.includes(c)).slice(0, 12);
   const totalGuideCost = Object.entries(selectedGuides).reduce((s, [city, id]) => { const g = (guideMap[city] ?? []).find((x) => x.id === id); return s + (g?.pricePerDay ?? 0); }, 0);
   const totalRouteCost = itinerary.reduce((s, it) => s + (it.totalCost ?? 0), 0);
   const routeMapLink = useMemo(() => {
@@ -358,25 +594,30 @@ function JourneyPlannerMode() {
       {step === 1 && (
         <div className="space-y-6 rounded-2xl bg-white p-6 shadow-sm border border-orange-100">
           <div className="flex flex-wrap gap-3">
-            <input type="text" value={cityInput} onChange={(e) => setCityInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addCity(cityInput)}
+            <CityAutocompleteInput
+              value={autocomplete.query}
+              onSearch={autocomplete.setQuery}
+              suggestions={autocomplete.suggestions}
+              loading={autocomplete.loading}
+              showDropdown={autocomplete.showDropdown}
+              setShowDropdown={autocomplete.setShowDropdown}
+              onSelect={(city) => { autocomplete.rawSetQuery(city); addCity(city); }}
+              onSubmit={() => addCity(autocomplete.query)}
               placeholder="Type city name (e.g. Mumbai, Varanasi, Jaipur)"
-              className="flex-1 min-w-[220px] p-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
-              list="jp-city-list" />
-            <datalist id="jp-city-list">{INDIAN_CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-            <button onClick={() => addCity(cityInput)} disabled={loading}
+              listId="jp-city-input"
+            />
+            <button onClick={() => addCity(autocomplete.query)} disabled={loading}
               className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-2 rounded-lg font-bold hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition">
               {loading ? 'Loading...' : 'Add City'}
             </button>
           </div>
 
-          {quickCities.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {quickCities.map((c) => (
-                <button key={c} onClick={() => addCity(c)} className="px-3 py-1 rounded-full bg-yellow-100 hover:bg-yellow-200 text-red-800 text-sm font-semibold">{c}</button>
-              ))}
-            </div>
-          )}
+          {/* Quick-pick popular cities */}
+          <div className="flex flex-wrap gap-2">
+            {POPULAR_CITIES.filter((c) => !selectedCities.includes(c)).map((c) => (
+              <button key={c} onClick={() => addCity(c)} className="px-3 py-1 rounded-full bg-yellow-100 hover:bg-yellow-200 text-red-800 text-sm font-semibold">{c}</button>
+            ))}
+          </div>
 
           {selectedCities.length > 0 && (
             <div className="flex gap-2 flex-wrap">
@@ -399,9 +640,9 @@ function JourneyPlannerMode() {
                     <button type="button" key={place.id}
                       className={`text-left p-4 border rounded-xl transition ${isSel ? 'border-red-500 bg-yellow-50' : 'border-orange-100 hover:border-orange-400'}`}
                       onClick={() => togglePlace(place)}>
-                      <div className="relative w-full h-36 mb-3 rounded-lg overflow-hidden">
-                        <Image src={stableImage(place.name, city)} alt={place.name} fill className="object-cover" unoptimized />
-                        {isSel && <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center"><span className="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-black">✓</span></div>}
+                      <div className="relative w-full h-36 mb-3 rounded-lg overflow-hidden shrink-0">
+                        <PlaceImage placeName={place.name} city={city} type={place.type} className="object-cover" />
+                        {isSel && <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center pointer-events-none"><span className="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-black">✓</span></div>}
                       </div>
                       <div className="flex justify-between items-start mb-1">
                         <h4 className="font-bold text-gray-800">{place.name}</h4>
@@ -413,9 +654,14 @@ function JourneyPlannerMode() {
                         <span className="bg-orange-100 px-2 py-1 rounded">{place.bestTime}</span>
                         <span className="bg-orange-100 px-2 py-1 rounded">{place.type}</span>
                       </div>
-                      <div className="flex gap-3 text-xs">
-                        <a href={googlePhotos(place.name, city)} target="_blank" rel="noreferrer" className="underline text-red-700 font-semibold" onClick={(e) => e.stopPropagation()}>Google Photos</a>
-                        <a href={googleMap(place.name, city)} target="_blank" rel="noreferrer" className="underline text-red-700 font-semibold" onClick={(e) => e.stopPropagation()}>Google Maps</a>
+                      <div className="flex justify-end mt-2">
+                        <a href={googleMap(place.name, city)} target="_blank" rel="noreferrer" title="Map view" className="inline-flex items-center gap-1.5 text-green-700 font-bold hover:text-green-900 transition bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200" onClick={(e) => e.stopPropagation()}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                          </svg>
+                          <span>Map View</span>
+                        </a>
                       </div>
                     </button>
                   );
@@ -606,7 +852,7 @@ function JourneyPlannerMode() {
               {itinerary.map((item, idx) => (
                 <div key={idx} className="bg-white border border-orange-200 rounded-2xl overflow-hidden shadow-sm">
                   <div className="relative w-full h-48">
-                    <Image src={item.imageUrl || stableImage(item.place, item.city)} alt={item.place} fill className="object-cover" unoptimized />
+                    <PlaceImage placeName={item.place} city={item.city} className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                     <div className="absolute bottom-3 left-4 text-white">
                       <p className="text-xl font-black">{item.place}</p>
@@ -683,7 +929,7 @@ function PlannerContent() {
     <div className="max-w-6xl mx-auto py-8 text-orange-950">
       <div className="rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-yellow-400 p-8 text-white mb-8 shadow-md">
         <h1 className="text-4xl md:text-5xl font-black text-center">SwadeshiYatra Planner</h1>
-        <p className="text-center mt-2 text-white/90">AI-powered travel planning for India — powered by Gemini</p>
+        <p className="text-center mt-2 text-white/90">AI-powered travel planning for India — powered by Gemini & Google Places</p>
         <div className="flex justify-center gap-4 mt-6">
           <button onClick={() => setActiveMode('city')}
             className={`px-6 py-3 rounded-full font-bold transition ${activeMode === 'city' ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`}>

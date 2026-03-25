@@ -136,22 +136,64 @@ export const login = (email: string, password: string, role: UserRole): User | n
   return user;
 };
 
-export const register = (user: Partial<User>): User => {
-  const newUser: User = {
-    id: Math.random().toString(36).substr(2, 9),
-    name: user.name || '',
-    email: user.email || '',
-    role: user.role || 'TOURIST',
-    verified: user.role === 'TOURIST',
-    ...user,
+export const register = (input: RegisterInput): { user?: User; error?: string } => {
+  const name = input.name.trim();
+  const email = input.email.trim();
+  const password = input.password.trim();
+  const location = input.location?.trim();
+  const users = loadUsers();
+
+  if (!name || !email || !password) {
+    return { error: 'Name, email, and password are required.' };
+  }
+
+  if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
+    return { error: 'An account with this email already exists.' };
+  }
+
+  if (input.role !== 'TOURIST') {
+    if (!input.contactNumber?.trim()) {
+      return { error: 'Contact number is required for service providers.' };
+    }
+    if (!input.nationalIdDocument?.trim()) {
+      return { error: 'National ID document is required.' };
+    }
+    if (!input.licenseDocument?.trim()) {
+      return { error: 'Authorized license document is required.' };
+    }
+    if (!location) {
+      return { error: 'Location is required for service providers.' };
+    }
+    if (!input.price || input.price <= 0) {
+      return { error: 'Please provide a valid price.' };
+    }
+  }
+
+  const storedUser: StoredUser = {
+    id: createId(),
+    name,
+    email,
+    password,
+    role: input.role,
+    verified: input.role === 'TOURIST',
+    location,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    contactNumber: input.contactNumber?.trim(),
+    nationalIdDocument: input.nationalIdDocument?.trim(),
+    licenseDocument: input.licenseDocument?.trim(),
+    price: input.role === 'TOURIST' ? undefined : input.price,
+    features: input.features?.filter((feature) => feature.trim().length > 0),
   };
 
   const nextUsers = [...users, storedUser];
   saveUsers(nextUsers);
+
   const user = sanitizeUser(storedUser);
   if (isBrowser()) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
   }
+
   return { user };
 };
 
