@@ -107,6 +107,59 @@ function PlaceImage({ placeName, city, type, className }: { placeName: string; c
   );
 }
 
+// ─── Travel Tip Loader ─────────────────────────────────────────────────────
+
+const TRAVEL_TIPS = [
+  '🇮🇳 India has 40+ UNESCO World Heritage Sites.',
+  '🚂 Indian Railways is one of the world\'s largest rail networks.',
+  '🛕 Varanasi is among the world\'s oldest continuously inhabited cities.',
+  '🏖️ India has over 7,500 km of coastline.',
+  '🎨 India has 22 officially recognised languages.',
+  '🌿 India is the world\'s largest producer of spices.',
+  '🕌 The Taj Mahal took 22 years and 20,000 workers to build.',
+  '🎭 Bollywood produces more films per year than Hollywood.',
+  '🌅 India has 5 different time zone regions across its territory.',
+  '🦅 India is home to the Bengal Tiger, Indian Elephant, and Snow Leopard.',
+];
+
+function TravelTipLoader({ message }: { message: string }) {
+  const [index, setIndex] = React.useState(0);
+  const [visible, setVisible] = React.useState(true);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % TRAVEL_TIPS.length);
+        setVisible(true);
+      }, 400);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="rounded-2xl p-10 shadow-sm border text-center" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+      <div className="text-5xl mb-4" style={{ animation: 'floaty 5s ease-in-out infinite' }}>✈️</div>
+      <p className="text-xl font-bold mb-2" style={{ color: 'var(--sw-red)' }}>{message}</p>
+      <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>Preparing your personalised plan...</p>
+      <div className="max-w-sm mx-auto rounded-xl p-4 border" style={{ background: 'rgba(255,122,0,0.06)', borderColor: 'rgba(255,122,0,0.2)' }}>
+        <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--sw-saffron)' }}>Did You Know?</p>
+        <p
+          className="text-sm font-semibold transition-opacity duration-300"
+          style={{ color: 'var(--foreground)', opacity: visible ? 1 : 0 }}
+        >
+          {TRAVEL_TIPS[index]}
+        </p>
+      </div>
+      <div className="flex justify-center gap-1.5 mt-4">
+        {[0,1,2].map((i) => (
+          <div key={i} className="rounded-full" style={{ width: 6, height: 6, background: i === 0 ? 'var(--sw-saffron)' : i === 1 ? 'white' : 'var(--sw-blue)', animation: `saffronPulse ${1.5 + i*0.4}s ease-in-out infinite` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── City Autocomplete Hook ─────────────────────────────────────────────────
 
 function useCityAutocomplete() {
@@ -336,11 +389,7 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
       </div>
 
       {loading && (
-        <div className="rounded-2xl bg-white p-12 shadow-sm border border-orange-100 text-center">
-          <div className="text-5xl mb-4 animate-bounce">🤖</div>
-          <p className="text-xl font-bold text-red-700">Gemini AI is generating your city guide...</p>
-          <p className="text-gray-500 text-sm mt-2">Getting real attractions, fees, hours and tips for {selectedCity}</p>
-        </div>
+        <TravelTipLoader message={`Fetching guide for ${selectedCity}...`} />
       )}
 
       {cityData && !loading && (
@@ -463,9 +512,9 @@ function JourneyPlannerMode() {
   const [cityPlaces, setCityPlaces] = useState<Record<string, TouristPlace[]>>({});
   const [selectedPlaces, setSelectedPlaces] = useState<TouristPlace[]>([]);
   const [guideMap, setGuideMap] = useState<Record<string, GuideOption[]>>({});
-  const [loading, setLoading] = useState(false);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+  const [planLoading, setPlanLoading] = useState(false);
   const [error, setError] = useState('');
-  const geminiAlert = 'Gemini not giving data alert';
   const [selectedGuides, setSelectedGuides] = useState<Record<string, string>>({});
   const [preferences, setPreferences] = useState<TripPreferences>({
     budget: 30000, durationDays: 5, cities: [], places: [], originCountry: 'India', foodPreference: 'BOTH', travelPreference: 'BOTH',
@@ -494,7 +543,7 @@ function JourneyPlannerMode() {
   const addCity = async (raw: string) => {
     const city = raw.trim();
     if (!city || selectedCities.includes(city)) { autocomplete.clear(); return; }
-    setError(''); setLoading(true);
+    setError(''); setCitiesLoading(true);
     autocomplete.clear();
     try {
       const places = await fetchPlaces(city);
@@ -508,9 +557,9 @@ function JourneyPlannerMode() {
       await loadGuides(next);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Could not load city data. Please try again.';
-      setError(message.includes('Gemini not giving data alert') ? geminiAlert : message);
+      setError(message);
     }
-    finally { setLoading(false); }
+    finally { setCitiesLoading(false); }
   };
 
   const togglePlace = (place: TouristPlace) => {
@@ -529,7 +578,7 @@ function JourneyPlannerMode() {
 
   const handleGeneratePlan = async () => {
     if (!selectedCities.length || !selectedPlaces.length) { setError('Please select at least one city and one place.'); return; }
-    setLoading(true); setError('');
+    setPlanLoading(true); setError('');
     try {
       const { feasibility: feas, itinerary: plan } = await fetchPlan({
         ...preferences, cities: selectedCities, places: selectedPlaces,
@@ -563,9 +612,9 @@ function JourneyPlannerMode() {
       setStep(3);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unable to generate plan. Please retry.';
-      setError(message.includes('Gemini not giving data alert') ? geminiAlert : message);
+      setError(message);
     }
-    finally { setLoading(false); }
+    finally { setPlanLoading(false); }
   };
 
   const totalGuideCost = Object.entries(selectedGuides).reduce((s, [city, id]) => { const g = (guideMap[city] ?? []).find((x) => x.id === id); return s + (g?.pricePerDay ?? 0); }, 0);
@@ -606,9 +655,9 @@ function JourneyPlannerMode() {
               placeholder="Type city name (e.g. Mumbai, Varanasi, Jaipur)"
               listId="jp-city-input"
             />
-            <button onClick={() => addCity(autocomplete.query)} disabled={loading}
+            <button onClick={() => addCity(autocomplete.query)} disabled={citiesLoading}
               className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-2 rounded-lg font-bold hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition">
-              {loading ? 'Loading...' : 'Add City'}
+              {citiesLoading ? '⏳ Loading...' : 'Add City'}
             </button>
           </div>
 
@@ -632,7 +681,27 @@ function JourneyPlannerMode() {
 
           {selectedCities.map((city) => (
             <div key={city} className="bg-white rounded-xl border border-orange-100 p-4">
-              <h3 className="font-black text-xl text-red-700 mb-3">{city} Attractions</h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-black text-xl text-red-700">{city} Attractions</h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const places = cityPlaces[city] ?? [];
+                    const allSel = places.every((p) => selectedPlaces.find((s) => s.name === p.name && s.city === p.city));
+                    if (allSel) {
+                      setSelectedPlaces((prev) => prev.filter((s) => s.city !== city));
+                    } else {
+                      const toAdd = places.filter((p) => !selectedPlaces.find((s) => s.name === p.name && s.city === p.city));
+                      setSelectedPlaces((prev) => [...prev, ...toAdd]);
+                    }
+                  }}
+                  className="text-xs font-bold px-3 py-1.5 rounded-full border transition"
+                  style={{ borderColor: 'rgba(255,122,0,0.4)', color: 'var(--sw-saffron)', background: 'rgba(255,122,0,0.08)' }}
+                >
+                  {(cityPlaces[city] ?? []).every((p) => selectedPlaces.find((s) => s.name === p.name && s.city === p.city))
+                    ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(cityPlaces[city] ?? []).map((place) => {
                   const isSel = !!selectedPlaces.find((p) => p.name === place.name && p.city === place.city);
@@ -770,7 +839,9 @@ function JourneyPlannerMode() {
             </label>
           </div>
 
-          <div>
+          {planLoading && <TravelTipLoader message="Building your journey plan..." />}
+
+          <div style={{ display: planLoading ? 'none' : 'block' }}>
             <h3 className="text-xl font-black text-red-700 mb-3">Select Guide by City (Optional)</h3>
             {selectedCities.map((city) => {
               const guides = guideMap[city] ?? [];
@@ -799,9 +870,9 @@ function JourneyPlannerMode() {
 
           <div className="flex gap-4 justify-center">
             <button onClick={() => setStep(1)} className="px-8 py-3 border border-orange-300 rounded-full font-bold hover:bg-orange-50 transition">Back</button>
-            <button onClick={handleGeneratePlan} disabled={loading}
+            <button onClick={handleGeneratePlan} disabled={planLoading}
               className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-10 py-3 rounded-full font-bold hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition shadow-lg">
-              {loading ? '🤖 Gemini AI is Planning...' : 'Generate AI Journey Plan'}
+              {planLoading ? '✈️ Planning your journey...' : 'Generate Journey Plan'}
             </button>
           </div>
         </div>
@@ -929,7 +1000,7 @@ function PlannerContent() {
     <div className="max-w-6xl mx-auto py-8 text-orange-950">
       <div className="rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-yellow-400 p-8 text-white mb-8 shadow-md">
         <h1 className="text-4xl md:text-5xl font-black text-center">SwadeshiYatra Planner</h1>
-        <p className="text-center mt-2 text-white/90">AI-powered travel planning for India — powered by Gemini & Google Places</p>
+        <p className="text-center mt-2 text-white/90">Discover India like never before — city guides, routes, itineraries & costs</p>
         <div className="flex justify-center gap-4 mt-6">
           <button onClick={() => setActiveMode('city')}
             className={`px-6 py-3 rounded-full font-bold transition ${activeMode === 'city' ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`}>
