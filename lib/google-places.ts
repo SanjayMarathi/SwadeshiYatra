@@ -5,17 +5,12 @@ const geminiApiKey =
   process.env.GEMINI_API_KEY ||
   "";
 
-// ─── City Autocomplete ──────────────────────────────────────────────────────
 
 export interface CitySuggestion {
   name: string;
   placeId: string;
   description: string;
 }
-
-/**
- * Returns Indian city suggestions matching the user's partial input using Gemini.
- */
 export async function searchCities(
   query: string
 ): Promise<CitySuggestion[]> {
@@ -24,7 +19,7 @@ export async function searchCities(
   try {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    
+
     const prompt = `User typed: "${query}". Return a JSON array of up to 5 actual major Indian cities matching this prefix or spelling.
 Format STRICTLY as:
 [{"name":"City Name","placeId":"cityname","description":"City Name, State, India"}]`;
@@ -58,7 +53,7 @@ export async function getPlacePhotoUrl(
     const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
       query
     )}&utf8=&format=json&srlimit=1`;
-    
+
     let res = await fetch(searchUrl, { cache: "no-store", headers: { "User-Agent": "SwadeshiYatra/1.0" } });
     let data = await res.json();
     let bestTitle = data.query?.search?.[0]?.title;
@@ -75,7 +70,7 @@ export async function getPlacePhotoUrl(
       const photoUrl = pages?.[pageId]?.original?.source;
       if (photoUrl) return photoUrl;
     }
-    
+
     return null;
   } catch (err) {
     console.error("[fallback-places] Photo fetch failed:", err);

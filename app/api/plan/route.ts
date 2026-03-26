@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeFeasibility, generateItinerary } from "@/lib/gemini";
-import { TouristPlace } from "@/types";
+import { TouristPlace, TripPreferences } from "@/types";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { budget, durationDays, cities, places, originCountry, foodPreference, travelPreference } = body;
+    const { budget, durationDays, cities, places, originCountry, foodPreference, travelPreference, groupType, activityLevel, dietaryRestrictions } = body;
 
     const input = {
       budget: Number(budget),
@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
       originCountry: originCountry as string,
       foodPreference: foodPreference as "VEG" | "NON-VEG" | "BOTH",
       travelPreference: travelPreference as "PUBLIC" | "PRIVATE" | "BOTH",
+      groupType: groupType as TripPreferences["groupType"],
+      activityLevel: activityLevel as TripPreferences["activityLevel"],
+      dietaryRestrictions: dietaryRestrictions as TripPreferences["dietaryRestrictions"],
     };
 
     const [feasibility, itinerary] = await Promise.all([

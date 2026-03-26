@@ -43,6 +43,9 @@ export interface TripPreferences {
   accommodationPreference?: 'BUDGET' | 'COMFORT' | 'LUXURY';
   interests?: string[];
   requireGuide?: boolean;
+  groupType?: 'SOLO' | 'COUPLE' | 'FAMILY' | 'FRIENDS';
+  activityLevel?: 'LOW' | 'MODERATE' | 'HIGH';
+  dietaryRestrictions?: 'NONE' | 'VEGAN' | 'HALAL' | 'JAIN' | 'GLUTEN_FREE' | 'OTHER';
 }
 
 export interface ItineraryItem {
@@ -73,6 +76,10 @@ export interface ItineraryItem {
 export interface FeasibilityResult {
   isPossible: boolean;
   reason?: string;
+  suggestedArrivalAirport?: string;
+  optimizedCityRoute?: string[];
+  foodAndStayAdvice?: string;
+  generalCautions?: string[];
   suggestions?: string[];
   estimatedCost: number;
   estimatedTime: number;

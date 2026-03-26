@@ -84,26 +84,40 @@ function PlaceImage({ placeName, city, type, className }: { placeName: string; c
         href={googlePhotos(placeName, city)} 
         target="_blank" 
         rel="noreferrer" 
-        title="Tap to load image"
-        className={`w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-orange-50 text-orange-400 hover:text-red-500 hover:bg-orange-100 transition p-4 gap-2`}
+        className={`w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-orange-50 text-orange-400 hover:text-red-500 hover:bg-orange-100 transition p-4 gap-2 z-0`}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
         </svg>
-        <span className="font-semibold text-sm text-center">Tap to load image</span>
+        <span className="font-semibold text-sm text-center">Click for more</span>
       </a>
     );
   }
 
   return (
-    <Image
-      src={photoUrl}
-      alt={placeName}
-      fill
-      className={className || 'object-cover'}
-      unoptimized
-      onError={() => setImgError(true)}
-    />
+    <a 
+      href={googlePhotos(placeName, city)} 
+      target="_blank" 
+      rel="noreferrer" 
+      className={`group block absolute inset-0 z-0 ${className || ''}`}
+    >
+      <Image
+        src={photoUrl}
+        alt={placeName}
+        fill
+        className="object-cover"
+        unoptimized
+        onError={() => setImgError(true)}
+      />
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+        <span className="bg-white/95 text-red-700 font-bold px-4 py-2 rounded-full text-sm shadow-xl flex items-center gap-2 transform transition-transform group-hover:scale-105">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Click for more
+        </span>
+      </div>
+    </a>
   );
 }
 
@@ -132,28 +146,33 @@ function TravelTipLoader({ message }: { message: string }) {
       setTimeout(() => {
         setIndex((i) => (i + 1) % TRAVEL_TIPS.length);
         setVisible(true);
-      }, 400);
-    }, 3000);
+      }, 300);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="rounded-2xl p-10 shadow-sm border text-center" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-      <div className="text-5xl mb-4" style={{ animation: 'floaty 5s ease-in-out infinite' }}>✈️</div>
-      <p className="text-xl font-bold mb-2" style={{ color: 'var(--sw-red)' }}>{message}</p>
-      <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>Preparing your personalised plan...</p>
-      <div className="max-w-sm mx-auto rounded-xl p-4 border" style={{ background: 'rgba(255,122,0,0.06)', borderColor: 'rgba(255,122,0,0.2)' }}>
-        <p className="text-xs font-bold uppercase mb-2" style={{ color: 'var(--sw-saffron)' }}>Did You Know?</p>
+      <div className="text-6xl mb-6 flex justify-center w-full" style={{ animation: 'floaty 3s ease-in-out infinite' }}>
+        <div className="relative">
+          <span className="absolute -inset-4 bg-orange-200 rounded-full blur-xl opacity-50 animate-pulse"></span>
+          <span className="relative z-10">🚀</span>
+        </div>
+      </div>
+      <p className="text-2xl font-black mb-2 tracking-tight" style={{ color: 'var(--sw-red)' }}>{message}</p>
+      <p className="text-sm mb-8 font-medium" style={{ color: 'var(--muted)' }}>Optimising routes and gathering local insights...</p>
+      <div className="max-w-md mx-auto rounded-2xl p-5 border min-h-[90px] shadow-sm" style={{ background: 'rgba(255,122,0,0.06)', borderColor: 'rgba(255,122,0,0.2)' }}>
+        <p className="text-xs font-black uppercase mb-2 tracking-wider" style={{ color: 'var(--sw-saffron)' }}>Travel Fact</p>
         <p
-          className="text-sm font-semibold transition-opacity duration-300"
-          style={{ color: 'var(--foreground)', opacity: visible ? 1 : 0 }}
+          className="text-base font-bold transition-all duration-300"
+          style={{ color: 'var(--foreground)', opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(5px)' }}
         >
           {TRAVEL_TIPS[index]}
         </p>
       </div>
-      <div className="flex justify-center gap-1.5 mt-4">
+      <div className="flex justify-center gap-2 mt-8">
         {[0,1,2].map((i) => (
-          <div key={i} className="rounded-full" style={{ width: 6, height: 6, background: i === 0 ? 'var(--sw-saffron)' : i === 1 ? 'white' : 'var(--sw-blue)', animation: `saffronPulse ${1.5 + i*0.4}s ease-in-out infinite` }} />
+          <div key={i} className="rounded-full shadow-sm" style={{ width: 8, height: 8, background: i === 0 ? 'var(--sw-saffron)' : i === 1 ? 'white' : 'var(--sw-blue)', animation: `saffronPulse ${1 + i*0.3}s ease-in-out infinite` }} />
         ))}
       </div>
     </div>
@@ -397,8 +416,18 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
           {/* Overview banner */}
           <div className="rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-yellow-400 p-6 text-white shadow-md">
             <h2 className="text-3xl font-black mb-2">{selectedCity} — Complete Travel Guide</h2>
-            <p className="text-white/90 mb-4">{cityData.cityOverview}</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <p className="text-white/95 text-lg mb-4 leading-relaxed font-medium">{cityData.cityOverview}</p>
+            
+            {cityData.historicalImportance && (
+              <div className="mb-5 bg-black/20 rounded-xl p-4 border border-white/10">
+                <p className="font-bold text-sm mb-1.5 flex items-center gap-2 text-yellow-200">
+                  <span>🏛️</span> Historical & Cultural Legacy
+                </p>
+                <p className="text-white/90 text-sm leading-relaxed">{cityData.historicalImportance}</p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-5">
               {[
                 { label: 'Best Time', val: cityData.bestTimeToVisit },
                 { label: 'How to Reach', val: cityData.howToReach },
@@ -411,14 +440,37 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
                 </div>
               ))}
             </div>
-            {cityData.culturalTips?.length > 0 && (
-              <div className="mt-4 bg-white/15 rounded-xl p-4">
-                <p className="font-bold text-sm mb-2">💡 Cultural Tips</p>
-                <ol className="space-y-1 text-sm text-white/90">
-                  {cityData.culturalTips.map((tip, i) => <li key={i}>{i + 1}. {tip}</li>)}
-                </ol>
-              </div>
-            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {cityData.topSuggestions?.length > 0 && (
+                <div className="bg-white/15 rounded-xl p-4">
+                  <p className="font-bold text-sm mb-3 flex items-center gap-2 text-yellow-200">
+                    <span>⭐</span> Expert Recommendations
+                  </p>
+                  <ul className="space-y-2 text-sm text-white/95">
+                    {cityData.topSuggestions.map((tip, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-yellow-300 font-black">·</span> {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {cityData.culturalTips?.length > 0 && (
+                <div className="bg-white/15 rounded-xl p-4">
+                  <p className="font-bold text-sm mb-3 flex items-center gap-2 text-yellow-200">
+                    <span>💡</span> Local & Cultural Tips
+                  </p>
+                  <ul className="space-y-2 text-sm text-white/95">
+                    {cityData.culturalTips.map((tip, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-yellow-300 font-black">·</span> {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Attraction cards */}
@@ -518,6 +570,7 @@ function JourneyPlannerMode() {
   const [selectedGuides, setSelectedGuides] = useState<Record<string, string>>({});
   const [preferences, setPreferences] = useState<TripPreferences>({
     budget: 30000, durationDays: 5, cities: [], places: [], originCountry: 'India', foodPreference: 'BOTH', travelPreference: 'BOTH',
+    groupType: 'FAMILY', activityLevel: 'MODERATE', dietaryRestrictions: 'NONE'
   });
   const [feasibility, setFeasibility] = useState<FeasibilityResult | null>(null);
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
@@ -764,21 +817,26 @@ function JourneyPlannerMode() {
       {step === 2 && (
         <div className="space-y-6 rounded-2xl bg-white p-6 shadow-sm border border-orange-100">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { label: 'Total Budget (₹ INR)', key: 'budget', type: 'number', min: 1000 },
-              { label: 'Trip Duration (Days)', key: 'durationDays', type: 'number', min: 1 },
-            ].map(({ label, key, type, min }) => (
-              <div key={key}>
-                <label className="block text-sm font-bold text-gray-700 mb-1">{label}</label>
-                 <input type={type} min={min} value={(preferences as unknown as Record<string, unknown>)[key] as number}
-                  onChange={(e) => setPreferences((p) => ({ ...p, [key]: Number(e.target.value) }))}
-                  className="w-full p-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-red-400 outline-none" />
-              </div>
-            ))}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Country of Origin</label>
+            <div className="md:col-span-2 lg:col-span-1">
+              <label className="flex flex-col text-sm font-bold text-gray-700 mb-1 gap-1.5">
+                <div className="flex justify-between items-center w-full">
+                  <span>Total Budget (₹ INR)</span>
+                  <span className="text-xs text-orange-700 font-bold bg-orange-100 px-2 py-0.5 rounded border border-orange-200 shadow-sm whitespace-nowrap">
+                    💡 AI Est. Minimum: ₹{((selectedPlaces.length * 800) + (selectedCities.length * 2500)).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-gray-500 bg-gray-50 px-2 py-1 rounded inline-block">⚠️ Post-Arrival/Inside India expenses ONLY (Excludes Intl. Flights)</span>
+              </label>
+              <input type="number" min={1000} value={preferences.budget}
+                onChange={(e) => setPreferences((p) => ({ ...p, budget: Number(e.target.value) }))}
+                className="w-full p-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-red-400 outline-none font-semibold text-lg" />
+            </div>
+
+            <div className="md:col-span-2 lg:col-span-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">Where are you traveling from? (City, Country)</label>
               <input type="text" value={preferences.originCountry}
                 onChange={(e) => setPreferences((p) => ({ ...p, originCountry: e.target.value }))}
+                placeholder="e.g., London, UK or Delhi, India"
                 className="w-full p-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-red-400 outline-none" />
             </div>
             <div>
@@ -819,6 +877,46 @@ function JourneyPlannerMode() {
                 <option value="LUXURY">Luxury</option>
               </select>
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-orange-900">Group Type</label>
+              <select
+                value={preferences.groupType}
+                onChange={(e) => setPreferences({ ...preferences, groupType: e.target.value as TripPreferences['groupType'] })}
+                className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              >
+                <option value="SOLO">Solo Traveler</option>
+                <option value="COUPLE">Couple</option>
+                <option value="FAMILY">Family with kids</option>
+                <option value="FRIENDS">Group of Friends</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-orange-900">Activity Level</label>
+              <select
+                value={preferences.activityLevel}
+                onChange={(e) => setPreferences({ ...preferences, activityLevel: e.target.value as TripPreferences['activityLevel'] })}
+                className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              >
+                <option value="LOW">Relaxed / Low Pace</option>
+                <option value="MODERATE">Moderate / Balanced</option>
+                <option value="HIGH">High / Adventure focused</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-orange-900">Dietary Restrictions</label>
+              <select
+                value={preferences.dietaryRestrictions}
+                onChange={(e) => setPreferences({ ...preferences, dietaryRestrictions: e.target.value as TripPreferences['dietaryRestrictions'] })}
+                className="w-full rounded-xl border border-orange-200 bg-white/90 p-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+              >
+                <option value="NONE">None</option>
+                <option value="VEGAN">Vegan / Pure Veg</option>
+                <option value="JAIN">Jain</option>
+                <option value="HALAL">Halal</option>
+                <option value="GLUTEN_FREE">Gluten-free</option>
+                <option value="OTHER">Other specific diet</option>
+              </select>
+            </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-orange-900">Interests (comma separated)</label>
               <input
@@ -829,14 +927,6 @@ function JourneyPlannerMode() {
                 placeholder="history, local food, nature, architecture"
               />
             </div>
-            <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-orange-200 bg-white/90 px-4 py-3">
-              <input
-                type="checkbox"
-                checked={preferences.requireGuide}
-                onChange={(e) => setPreferences({ ...preferences, requireGuide: e.target.checked })}
-              />
-              <span className="text-sm font-semibold text-orange-900">I want guide assistance during the trip</span>
-            </label>
           </div>
 
           {planLoading && <TravelTipLoader message="Building your journey plan..." />}
@@ -884,26 +974,70 @@ function JourneyPlannerMode() {
           {!itinerary.length && <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-gray-700">No route yet. Go to Step 2 and click Generate.</div>}
 
           {feasibility && (
-            <div className={`p-6 rounded-xl border-l-8 ${feasibility.isPossible ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
-              <h2 className="text-2xl font-bold mb-2">{feasibility.isPossible ? '✅ Trip is Feasible' : '⚠️ Needs Optimization'}</h2>
-              <p className="text-gray-700 mb-4">{feasibility.reason}</p>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                {[
-                  { label: 'AI Estimated Cost', val: `₹${feasibility.estimatedCost.toLocaleString('en-IN')}` },
-                  { label: 'Hours Required', val: `${feasibility.estimatedTime}h` },
-                  { label: 'Route Total', val: `₹${totalRouteCost.toLocaleString('en-IN')}` },
-                ].map((x) => (
-                  <div key={x.label} className="bg-white p-4 rounded-xl shadow-sm text-center">
-                    <p className="text-xs text-gray-500 uppercase font-bold">{x.label}</p>
-                    <p className="text-2xl font-black text-red-700 mt-1">{x.val}</p>
+            <div className="space-y-6">
+              <div className={`p-6 rounded-2xl border-l-8 shadow-sm ${feasibility.isPossible ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                <h2 className="text-2xl font-black mb-2">{feasibility.isPossible ? '✅ Trip is Feasible' : '⚠️ Needs Optimization'}</h2>
+                <p className="text-gray-800 font-medium mb-4">{feasibility.reason}</p>
+                
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {[
+                    { label: 'AI Estimated Cost', val: `₹${feasibility.estimatedCost.toLocaleString('en-IN')}` },
+                    { label: 'Hours Required', val: `${feasibility.estimatedTime}h` },
+                    { label: 'Route Total', val: `₹${totalRouteCost.toLocaleString('en-IN')}` },
+                  ].map((x) => (
+                    <div key={x.label} className="bg-white p-4 rounded-xl shadow-sm border border-black/5 text-center">
+                      <p className="text-xs text-gray-500 uppercase font-bold">{x.label}</p>
+                      <p className="text-xl md:text-2xl font-black text-red-700 mt-1">{x.val}</p>
+                    </div>
+                  ))}
+                </div>
+                {(feasibility.suggestions?.length ?? 0) > 0 && (
+                  <div className="bg-white/60 p-4 rounded-xl mb-4">
+                    <p className="font-bold text-sm mb-2 text-gray-800">💡 Optimization Suggestions</p>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-700 text-sm">
+                      {feasibility.suggestions?.map((s, i) => <li key={i}>{s}</li>)}
+                    </ol>
                   </div>
-                ))}
+                )}
               </div>
-              {feasibility.suggestions?.length && (
-                <ol className="list-decimal list-inside space-y-1 text-gray-700 text-sm">
-                  {feasibility.suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                </ol>
-              )}
+
+              {/* Detailed Pre-Trip AI Guidance */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm">
+                   <h4 className="font-black text-lg text-blue-700 mb-2 flex items-center gap-2"><span>✈️</span> Recommended Route & Arrival</h4>
+                   <p className="text-sm text-gray-700 mb-3"><span className="font-bold">Land At:</span> {feasibility.suggestedArrivalAirport || 'Nearest major hub'}</p>
+                   {(feasibility.optimizedCityRoute?.length ?? 0) > 0 && (
+                     <div className="text-sm text-gray-700"><span className="font-bold mb-1 block">Optimised Sequence:</span> 
+                     <div className="flex flex-wrap gap-2">
+                       {feasibility.optimizedCityRoute?.map((city, ci, arr) => (
+                         <span key={ci} className="flex items-center gap-2">
+                           <span className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-semibold">{city}</span>
+                           {ci < arr.length - 1 && <span className="text-gray-400">→</span>}
+                         </span>
+                       ))}
+                     </div>
+                     </div>
+                   )}
+                </div>
+                
+                <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm">
+                   <h4 className="font-black text-lg text-red-700 mb-2 flex items-center gap-2"><span>⚠️</span> Survival & Safety Cautions</h4>
+                   {(feasibility.generalCautions?.length ?? 0) > 0 ? (
+                     <ul className="list-disc list-inside text-sm text-gray-700 space-y-1.5">
+                       {feasibility.generalCautions?.map((c, i) => <li key={i}>{c}</li>)}
+                     </ul>
+                   ) : (
+                     <p className="text-sm text-gray-600">No major cautions for this route. Standard travel precautions apply.</p>
+                   )}
+                </div>
+
+                {feasibility.foodAndStayAdvice && (
+                  <div className="md:col-span-2 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 rounded-r-2xl p-5 shadow-sm">
+                     <h4 className="font-black text-lg text-yellow-800 mb-2 flex items-center gap-2"><span>🏕️</span> Independent Food & Shelter Guidance</h4>
+                     <p className="text-sm text-gray-800 font-medium leading-relaxed">{feasibility.foodAndStayAdvice}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -921,7 +1055,7 @@ function JourneyPlannerMode() {
             <div className="space-y-4">
               <h2 className="text-3xl font-black text-center text-red-700">Complete Route Plan</h2>
               {itinerary.map((item, idx) => (
-                <div key={idx} className="bg-white border border-orange-200 rounded-2xl overflow-hidden shadow-sm">
+                <div key={idx} className="bg-white border border-orange-200 rounded-2xl overflow-hidden shadow-sm group hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 ease-out">
                   <div className="relative w-full h-48">
                     <PlaceImage placeName={item.place} city={item.city} className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -956,21 +1090,47 @@ function JourneyPlannerMode() {
                       <div className="bg-red-50 rounded-lg p-2 border border-red-100"><p className="text-xs text-gray-500">Transport</p><p className="font-bold text-red-700">₹{(item.transportCost ?? 0).toLocaleString('en-IN')}</p></div>
                       <div className="bg-red-50 rounded-lg p-2 border border-red-100"><p className="text-xs text-gray-500">Guide Fee</p><p className="font-bold text-red-700">₹{(item.guideFee ?? 0).toLocaleString('en-IN')}</p></div>
                     </div>
-                    <div className="flex gap-4 mt-4 text-sm justify-between items-center">
-                      <div className="flex gap-4">
-                        <a href={googlePhotos(item.place, item.city)} target="_blank" rel="noreferrer" className="underline text-red-700 font-semibold">Google Photos</a>
-                        <a href={googleMap(item.place, item.city)} target="_blank" rel="noreferrer" className="underline text-red-700 font-semibold">Google Maps</a>
+                    <div className="flex flex-wrap gap-4 mt-4 justify-between items-center border-t border-gray-100 pt-4">
+                      <div className="flex gap-3">
+                        <a href={googleMap(item.place, item.city)} target="_blank" rel="noreferrer" title="Map view" className="inline-flex items-center gap-1.5 text-green-700 font-bold hover:text-green-900 transition bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                          </svg>
+                          <span>Map View</span>
+                        </a>
                       </div>
-                      <p className="font-black text-lg text-red-700">₹{(item.totalCost ?? 0).toLocaleString('en-IN')}</p>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 font-bold uppercase">Estimated Cost</p>
+                        <p className="font-black text-xl text-red-700 leading-none">₹{(item.totalCost ?? 0).toLocaleString('en-IN')}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
 
-              <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-2xl p-6 text-center">
-                <p className="text-lg font-bold opacity-80">Complete Journey Cost</p>
-                <p className="text-4xl font-black mt-1">₹{totalRouteCost.toLocaleString('en-IN')}</p>
-                <p className="text-sm opacity-80 mt-1">{itinerary.length} stops · {selectedCities.length} cities · {preferences.durationDays} days · Excludes accommodation & meals</p>
+              <div className="bg-gradient-to-br from-orange-600 via-red-600 to-red-700 text-white rounded-2xl p-8 text-center shadow-xl border-4 border-orange-200/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full opacity-5 -translate-y-10 translate-x-10 pointer-events-none"></div>
+                
+                <p className="text-xl font-black text-orange-100 tracking-wide uppercase mb-2">Total Estimated Need (Post-Landing)</p>
+                <p className="text-5xl md:text-6xl font-black drop-shadow-md">₹{totalRouteCost.toLocaleString('en-IN')}</p>
+                
+                <div className="mt-5 bg-black/20 backdrop-blur-sm rounded-xl p-4 inline-block border border-white/10 text-left">
+                  <p className="text-sm font-bold text-white flex items-start gap-2 max-w-lg">
+                    <span className="text-lg">🛬</span>
+                    <span>Note: This estimation covers costs strictly <em>after</em> landing in India. Flights from your origin country to India are EXCLUDED.</span>
+                  </p>
+                </div>
+                
+                <p className="text-sm font-semibold opacity-90 mt-5 pt-4 border-t border-white/20 flex flex-wrap justify-center gap-x-4 gap-y-2">
+                  <span>{itinerary.length} stops</span> 
+                  <span>•</span> 
+                  <span>{selectedCities.length} cities</span> 
+                  <span>•</span> 
+                  <span>{itinerary.length > 0 ? itinerary.reduce((max, item) => Math.max(max, item.day), 0) : 0} AI Predicted Days</span> 
+                  <span>•</span> 
+                  <span>Excludes personal accommodation & meals</span>
+                </p>
               </div>
             </div>
           )}

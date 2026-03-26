@@ -17,87 +17,27 @@ const CITY_SHOWCASE = [
   { city: 'Kochi',      emoji: '⛵', beauty: 'Fort Kochi, Chinese Nets, Mattancherry Palace' },
 ];
 
-const FEATURES = [
-  {
-    icon: '🏛️',
-    title: 'City Deep Dive',
-    desc: 'Get 8–10 real attractions per city with visiting hours, entry fees (Indian/child/foreign), best season, cultural tips, and more.',
-    accent: 'saffron',
-  },
-  {
-    icon: '🗺️',
-    title: 'Multi-City Routes',
-    desc: 'Plan trips spanning multiple Indian cities with a sequenced day-wise itinerary, intercity transport options, and point-wise activity steps.',
-    accent: 'blue',
-  },
-  {
-    icon: '₹',
-    title: 'Full Cost Breakdown',
-    desc: 'See entry fees, transport, guide charges, and route totals — per stop, per day, and for the entire trip. No hotel or restaurant clutter.',
-    accent: 'red',
-  },
-];
-
 export default function Home() {
   return (
-    <div
-      className="flex flex-col items-center gap-12 max-w-7xl mx-auto px-4 py-10"
-      style={{ color: 'var(--foreground)' }}
-    >
-      {/* ─── Hero ───────────────────────────────────────────────────────────── */}
-      <section className="w-full rounded-3xl sw-hero p-10 md:p-14 shadow-xl text-white text-center relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10 bg-white" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full opacity-10 bg-white" />
-
-        <div className="relative">
-          <div className="text-5xl mb-3 animate-floaty inline-block">🇮🇳</div>
-          <h1 className="text-5xl md:text-6xl font-black mb-3 tracking-tight drop-shadow-lg">
+    <div className="flex flex-col items-center gap-12 max-w-7xl mx-auto px-4 py-10" style={{ color: 'var(--foreground)' }}>
+      
+      {/* ─── High-Contrast Hero ─────────────────────────────────────────────── */}
+      <section className="w-full rounded-3xl bg-gradient-to-br from-red-600 via-orange-500 to-yellow-500 p-10 md:p-16 shadow-2xl text-white text-center relative overflow-hidden border-4 border-orange-200/30">
+        <div className="absolute top-0 left-0 w-full h-full pattern-dots opacity-10 pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="text-6xl mb-4 animate-floaty inline-block shadow-black/20 drop-shadow-2xl">🇮🇳</div>
+          <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tight drop-shadow-xl text-white">
             SwadeshiYatra
           </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto text-white/90 leading-relaxed">
-            Your complete travel planner for India — explore any city in depth or plan a multi-city route with step-by-step itineraries.
+          <p className="text-xl md:text-2xl max-w-3xl mx-auto text-white leading-relaxed font-semibold drop-shadow-md">
+            The ultimate AI-powered travel companion for exploring India. Get deep city insights or craft perfect multi-city itineraries instantly.
           </p>
-
-          {/* Mode cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-10 max-w-3xl mx-auto text-left">
-            <Link
-              href="/planner?mode=city"
-              className="group block rounded-2xl p-6 border border-white/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
-              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}
-            >
-              <div className="text-4xl mb-3">🏛️</div>
-              <h2 className="text-xl font-black text-white mb-2">City Planner</h2>
-              <p className="text-white/80 text-sm leading-relaxed">
-                Pick one Indian city and get a complete guide — top attractions, visiting hours, entry fees, best season, tips, and full budget estimate.
-              </p>
-              <div className="mt-5 inline-block bg-white font-bold px-5 py-2 rounded-full text-sm transition-all group-hover:bg-yellow-100"
-                style={{ color: 'var(--sw-red)' }}>
-                Explore a City →
-              </div>
-            </Link>
-
-            <Link
-              href="/planner?mode=journey"
-              className="group block rounded-2xl p-6 border border-white/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
-              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}
-            >
-              <div className="text-4xl mb-3">🗺️</div>
-              <h2 className="text-xl font-black text-white mb-2">Journey Planner</h2>
-              <p className="text-white/80 text-sm leading-relaxed">
-                Plan a multi-city route across India — select cities, pick attractions, choose guides, and get a full day-wise itinerary with all costs.
-              </p>
-              <div className="mt-5 inline-block bg-white font-bold px-5 py-2 rounded-full text-sm transition-all group-hover:bg-yellow-100"
-                style={{ color: 'var(--sw-red)' }}>
-                Plan a Journey →
-              </div>
-            </Link>
-          </div>
-
-          <div className="mt-8">
+          
+          <div className="mt-8 flex justify-center gap-4">
             <Link
               href="/login"
-              className="inline-block border border-white/60 text-white font-bold px-8 py-3 rounded-full text-sm transition-all hover:bg-white/20"
+              className="inline-block bg-white text-red-700 font-black px-8 py-3 rounded-full shadow-lg transition-all hover:bg-yellow-50 hover:scale-105 hover:shadow-xl"
             >
               Join as Guide or Provider
             </Link>
@@ -105,53 +45,97 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Feature highlights ──────────────────────────────────────────────── */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-        {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="sw-card hover-lift p-6"
-            style={{
-              borderTop: `3px solid var(--sw-${f.accent})`,
-            }}
-          >
-            <div className="text-4xl mb-3">{f.icon}</div>
-            <h3 className="text-lg font-black mb-2" style={{ color: `var(--sw-${f.accent})` }}>
-              {f.title}
-            </h3>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
-              {f.desc}
+      {/* ─── Detailed Feature Explanations ──────────────────────────────────── */}
+      <section className="w-full grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        {/* City Planner Explanation */}
+        <Link href="/planner?mode=city" className="group flex flex-col justify-between rounded-3xl bg-white border-2 border-orange-200 shadow-md hover:shadow-2xl transition-all duration-300 hover:border-orange-400 overflow-hidden transform hover:-translate-y-1">
+          <div className="p-8">
+            <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-inner group-hover:scale-110 transition-transform">
+              🏛️
+            </div>
+            <h2 className="text-3xl font-black text-red-700 mb-4">City Planner</h2>
+            <p className="text-gray-700 font-medium mb-6 text-lg leading-relaxed">
+              Focus deeply on a single Indian destination. The AI generates a comprehensive, encyclopedic travel guide tailored for exploration.
             </p>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-start gap-3">
+                <span className="text-green-500 mt-1">✔️</span>
+                <span className="text-gray-800 font-medium"><strong>Detailed Attractions:</strong> Explores the top historic and cultural landmarks.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-500 mt-1">✔️</span>
+                <span className="text-gray-800 font-medium"><strong>Core Logistics:</strong> Lists precise visiting hours, best seasons, and entry fees (for Indians & Foreigners).</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-500 mt-1">✔️</span>
+                <span className="text-gray-800 font-medium"><strong>Rich History:</strong> Provides theoretical insights, cultural tips, and historical importance.</span>
+              </li>
+            </ul>
           </div>
-        ))}
+          <div className="bg-orange-50 p-6 border-t border-orange-100 flex justify-between items-center group-hover:bg-orange-100 transition-colors">
+            <span className="font-black text-orange-700">Launch City Planner</span>
+            <span className="text-2xl text-orange-600 transition-transform group-hover:translate-x-2">→</span>
+          </div>
+        </Link>
+
+        {/* Journey Planner Explanation */}
+        <Link href="/planner?mode=journey" className="group flex flex-col justify-between rounded-3xl bg-white border-2 border-red-200 shadow-md hover:shadow-2xl transition-all duration-300 hover:border-red-400 overflow-hidden transform hover:-translate-y-1">
+          <div className="p-8">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-inner group-hover:scale-110 transition-transform">
+              🗺️
+            </div>
+            <h2 className="text-3xl font-black text-red-700 mb-4">Journey Planner</h2>
+            <p className="text-gray-700 font-medium mb-6 text-lg leading-relaxed">
+              Design a complete multi-city itinerary. Select multiple destinations and let the AI sequence the perfect day-by-day travel plan.
+            </p>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-start gap-3">
+                <span className="text-green-500 mt-1">✔️</span>
+                <span className="text-gray-800 font-medium"><strong>Smart Sequencing:</strong> AI automatically orders your cities logically and predicts the needed trip duration.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-500 mt-1">✔️</span>
+                <span className="text-gray-800 font-medium"><strong>Personalized Context:</strong> Adjusts pacing and recommendations based on dietary needs, activity levels, and group types.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-500 mt-1">✔️</span>
+                <span className="text-gray-800 font-medium"><strong>Cost Breakdown:</strong> Calculates step-by-step travel costs, entry fees, and generates survival cautions.</span>
+              </li>
+            </ul>
+          </div>
+          <div className="bg-red-50 p-6 border-t border-red-100 flex justify-between items-center group-hover:bg-red-100 transition-colors">
+            <span className="font-black text-red-700">Launch Journey Planner</span>
+            <span className="text-2xl text-red-600 transition-transform group-hover:translate-x-2">→</span>
+          </div>
+        </Link>
+
       </section>
 
       {/* ─── City showcase ───────────────────────────────────────────────────── */}
-      <section className="w-full">
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-black sw-section-title mb-2">Beauties of India</h2>
-          <div className="sw-tricolor-bar max-w-xs mx-auto mb-3" />
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            Click any city to get a complete AI-generated travel guide
+      <section className="w-full mt-8">
+        <div className="mb-8 text-center bg-orange-50 border border-orange-200 rounded-2xl p-6">
+          <h2 className="text-3xl font-black text-red-700 mb-2">Beauties of India</h2>
+          <p className="text-base text-gray-700 font-medium">
+            Click any vibrant city below to instantly launch the <strong>City Planner</strong> and get a complete AI-generated travel guide.
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {CITY_SHOWCASE.map((item) => (
             <Link
               key={item.city}
               href={`/planner?mode=city&city=${encodeURIComponent(item.city)}`}
-              className="sw-card hover-lift block p-5 group"
+              className="bg-white border hover:border-orange-400 rounded-2xl shadow-sm hover:shadow-lg focus:outline-none transition-all duration-300 p-5 group transform hover:-translate-y-1 block"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">{item.emoji}</span>
-                <h3 className="font-black text-lg sw-section-title">{item.city}</h3>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-3xl bg-orange-50 rounded-lg p-2">{item.emoji}</span>
+                <h3 className="font-black text-xl text-gray-800">{item.city}</h3>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+              <p className="text-sm leading-relaxed text-gray-600 font-medium mb-4">
                 {item.beauty}
               </p>
-              <p className="text-xs font-bold mt-3 transition-colors group-hover:opacity-80"
-                style={{ color: 'var(--sw-saffron)' }}>
-                View City Guide →
+              <p className="text-sm font-bold mt-auto text-orange-600 group-hover:text-red-600 flex items-center gap-1 transition-colors">
+                View Deep Dive <span className="transition-transform group-hover:translate-x-1">→</span>
               </p>
             </Link>
           ))}
@@ -159,8 +143,8 @@ export default function Home() {
       </section>
 
       {/* ─── Footer strip ───────────────────────────────────────────────────── */}
-      <footer className="w-full text-center py-6 border-t" style={{ borderColor: 'var(--card-border)', color: 'var(--muted)' }}>
-        <p className="text-sm">
+      <footer className="w-full text-center py-6 mt-10 border-t border-orange-200">
+        <p className="text-sm font-bold text-orange-800">
           🇮🇳 SwadeshiYatra — Explore India, your way.
         </p>
       </footer>

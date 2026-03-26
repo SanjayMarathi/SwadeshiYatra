@@ -157,9 +157,11 @@ export interface CityAttractionDetail {
 
 export interface CityPlannerData {
   cityOverview: string;
+  historicalImportance: string;
   bestTimeToVisit: string;
   howToReach: string;
   localTransport: string;
+  topSuggestions: string[];
   attractions: CityAttractionDetail[];
   totalBudgetEstimate: string;
   culturalTips: string[];
@@ -167,12 +169,12 @@ export interface CityPlannerData {
 
 export const getCityPlannerData = async (city: string): Promise<CityPlannerData> => {
   const prompt = `Expert Indian travel guide for ${city}, India.
-Provide only real and factual information.
+Provide highly detailed theoretical information, rich historical importance, and expert suggestions about the city.
 Use actual named places only.
 CRITICAL: Use only simple ASCII characters in string values. Do not use unescaped double quotes inside values. No trailing commas.
 
 Respond ONLY as valid JSON:
-{"cityOverview":"2 sentences","bestTimeToVisit":"e.g. Oct-Mar","howToReach":"Air/Train/Road briefly","localTransport":"Options","attractions":[{"name":"Exact real name","type":"Historical","description":"3-4 sentences","highlights":["h1","h2","h3","h4"],"visitingHours":"9AM-5PM","bestSeason":"Oct-Mar","timeNeeded":"2hr","entryFeeAdult":100,"entryFeeChild":50,"entryFeeForeign":500,"nearbyAttractions":["a","b"],"tips":["t1","t2"],"rating":4.7,"fameScore":9}],"totalBudgetEstimate":"Rs 2000-4000/person/day","culturalTips":["c1","c2","c3"]}
+{"cityOverview":"3-4 sentences of deep theoretical introduction and local vibe","historicalImportance":"Detailed paragraph about the historical significance and legacy of the city","bestTimeToVisit":"e.g. Oct-Mar","howToReach":"Air/Train/Road briefly","localTransport":"Options","topSuggestions":["Unique suggestion 1","Unique suggestion 2","Unique suggestion 3"],"attractions":[{"name":"Exact real name","type":"Historical","description":"3-4 sentences","highlights":["h1","h2","h3","h4"],"visitingHours":"9AM-5PM","bestSeason":"Oct-Mar","timeNeeded":"2hr","entryFeeAdult":100,"entryFeeChild":50,"entryFeeForeign":500,"nearbyAttractions":["a","b"],"tips":["t1","t2"],"rating":4.7,"fameScore":9}],"totalBudgetEstimate":"Rs 2000-4000/person/day","culturalTips":["c1","c2","c3"]}
 Give 8 real attractions for ${city}. All fees in INR.`;
 
   const text = await generateText(prompt);
@@ -192,7 +194,7 @@ Give 8 real attractions for ${city}. All fees in INR.`;
 
 type PlannerInput = Pick<
   TripPreferences,
-  "budget" | "durationDays" | "cities" | "foodPreference" | "travelPreference"
+  "budget" | "durationDays" | "cities" | "foodPreference" | "travelPreference" | "groupType" | "activityLevel" | "dietaryRestrictions"
 > & {
   originCountry: string;
   places: Pick<TouristPlace, "name">[];
@@ -200,13 +202,21 @@ type PlannerInput = Pick<
 
 export const analyzeFeasibility = async (data: PlannerInput): Promise<FeasibilityResult> => {
   const prompt = `Analyze India trip feasibility:
-From: ${data.originCountry}, Budget: Rs ${data.budget}, Duration: ${data.durationDays}d
+From: ${data.originCountry}, Budget: Rs ${data.budget}
 Route: ${data.cities.join("->")}, Places: ${data.places.map((p) => p.name).join(", ")}
 Transport: ${data.travelPreference}
+Group: ${data.groupType || 'Not specified'}, Activity Level: ${data.activityLevel || 'Not specified'}
+Diet: ${data.dietaryRestrictions || 'None'}
+
+Calculate the optimal number of days required for this trip.
+Evaluate if the route makes sense. If cities are random (e.g. North to South), reorder them into a logical Sequence.
+Suggest the best major Indian International Airport to land at based on the first city.
+Provide practical advice on where to find authentic food/shelter if booked hotels/restaurants are unavailable, tailoring advice to diet and group type.
+Provide specific cautions for this route (e.g. network issues, carry food/water on highways), keeping the group type and activity level in mind.
 CRITICAL: Use only simple ASCII characters. No trailing commas. No unescaped quotes inside values.
 
 Respond ONLY as JSON:
-{"isPossible":true,"reason":"1-2 sentences","suggestions":["tip1","tip2","tip3"],"estimatedCost":45000,"estimatedTime":36}`;
+{"isPossible":true,"reason":"1-2 sentences","suggestedArrivalAirport":"Arrival Airport (Code)","optimizedCityRoute":["City1","City2"],"foodAndStayAdvice":"Advice","generalCautions":["caution1","caution2"],"suggestions":["tip1","tip2"],"estimatedCost":45000,"estimatedTime":36}`;
 
   const text = await generateText(prompt);
   return extractJson<FeasibilityResult>(text, 'object');
@@ -216,9 +226,14 @@ export const generateItinerary = async (data: PlannerInput): Promise<ItineraryIt
   const prompt = `Create a detailed India trip itinerary:
 Route: ${data.cities.join("->")}
 Places: ${data.places.map((p) => p.name).join(", ")}
-Duration: ${data.durationDays}d, Transport: ${data.travelPreference}
+Transport: ${data.travelPreference}
+Group: ${data.groupType || 'Not specified'}, Activity Level: ${data.activityLevel || 'Not specified'}
+Diet: ${data.dietaryRestrictions || 'None'}
 
+Calculate the optimal number of days required for this trip and assign the 'day' field accordingly. Ensure pace naturally matches Activity Level. Ensure food/step suggestions match Group and Diet.
 Use real Indian prices. Give 5 numbered point-wise steps per stop.
+CRITICAL: You MUST explicitly include EVERY single attraction from the 'Places' list in your day-by-day steps. Do not skip any selected places.
+CRITICAL: Prepend a relevant emoji to EVERY step in the 'highlights' array (e.g., "🛕 Visit Kashi Vishwanath...", "🍽️ Eat lunch at...", "🚕 Take a taxi to...").
 CRITICAL: Use only simple ASCII characters. No trailing commas. No unescaped quotes inside values.
 
 Respond ONLY as JSON array:
