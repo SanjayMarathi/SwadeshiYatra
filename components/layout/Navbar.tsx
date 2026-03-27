@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { User } from '@/types';
+import { getCurrentUser, logout } from '@/lib/auth';
 
 const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -15,11 +16,9 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const res = await fetch('/api/auth/me', { cache: 'no-store' });
-      if (!res.ok) { setUser(null); return; }
-      const data = await res.json();
-      setUser(data.user as User);
+    const loadUser = () => {
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
     };
     loadUser();
   }, []);
@@ -30,9 +29,8 @@ const Navbar = () => {
   }, [theme]);
 
   const handleLogout = () => {
-    fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
-      window.location.href = '/login';
-    });
+    logout();
+    window.location.href = '/login';
   };
 
   return (
@@ -97,7 +95,12 @@ const Navbar = () => {
 
             {user ? (
               <>
-                {user.role !== 'TOURIST' && (
+                {user.role === 'ADMIN' && (
+                  <Link href="/admin" className="font-semibold text-sm" style={{ color: 'var(--sw-red)' }}>
+                    🛡️ Admin Panel
+                  </Link>
+                )}
+                {user.role !== 'TOURIST' && user.role !== 'ADMIN' && (
                   <Link href="/dashboard" className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>
                     Dashboard
                   </Link>
@@ -158,7 +161,10 @@ const Navbar = () => {
             </button>
             {user ? (
               <>
-                {user.role !== 'TOURIST' && (
+                {user.role === 'ADMIN' && (
+                  <Link href="/admin" className="font-semibold py-2 text-sm" style={{ color: 'var(--sw-red)' }} onClick={() => setMenuOpen(false)}>🛡️ Admin Panel</Link>
+                )}
+                {user.role !== 'TOURIST' && user.role !== 'ADMIN' && (
                   <Link href="/dashboard" className="font-semibold py-2 text-sm" style={{ color: 'var(--foreground)' }} onClick={() => setMenuOpen(false)}>Dashboard</Link>
                 )}
                 <button onClick={handleLogout} className="sw-btn-primary text-sm w-full text-center py-2">Logout</button>

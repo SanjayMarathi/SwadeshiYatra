@@ -5,24 +5,16 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { TouristPlace, TripPreferences, FeasibilityResult, ItineraryItem, User } from '@/types';
 import { CityPlannerData } from '@/lib/gemini';
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
 type GuideOption = { id: string; name: string; city: string; pricePerDay: number; expertise: string };
-
 type CitySuggestion = { name: string; placeId: string; description: string };
-
 const FALLBACK_IMAGE = '/placeholder-travel.svg';
-
 const googlePhotos = (place: string, city: string) =>
   `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(`${place} ${city} India`)}`;
-
 const googleMap = (place: string, city: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place}, ${city}, India`)}`;
-
 // Quick-pick buttons (static shortcuts for popular cities)
 const POPULAR_CITIES = ['Jaipur', 'Varanasi', 'Mumbai', 'Delhi', 'Goa', 'Agra', 'Udaipur', 'Kochi'];
-
 const TYPE_FALLBACKS: Record<string, string> = {
   lake: 'https://images.unsplash.com/photo-1543881515-3885bb326848?w=800&q=80',
   river: 'https://images.unsplash.com/photo-1437482078695-73f550074fa8?w=800&q=80',
@@ -80,10 +72,10 @@ function PlaceImage({ placeName, city, type, className }: { placeName: string; c
 
   if (!photoUrl || imgError) {
     return (
-      <a 
-        href={googlePhotos(placeName, city)} 
-        target="_blank" 
-        rel="noreferrer" 
+      <a
+        href={googlePhotos(placeName, city)}
+        target="_blank"
+        rel="noreferrer"
         className={`w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-orange-50 text-orange-400 hover:text-red-500 hover:bg-orange-100 transition p-4 gap-2 z-0`}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -95,10 +87,10 @@ function PlaceImage({ placeName, city, type, className }: { placeName: string; c
   }
 
   return (
-    <a 
-      href={googlePhotos(placeName, city)} 
-      target="_blank" 
-      rel="noreferrer" 
+    <a
+      href={googlePhotos(placeName, city)}
+      target="_blank"
+      rel="noreferrer"
       className={`group block absolute inset-0 z-0 ${className || ''}`}
     >
       <Image
@@ -171,8 +163,8 @@ function TravelTipLoader({ message }: { message: string }) {
         </p>
       </div>
       <div className="flex justify-center gap-2 mt-8">
-        {[0,1,2].map((i) => (
-          <div key={i} className="rounded-full shadow-sm" style={{ width: 8, height: 8, background: i === 0 ? 'var(--sw-saffron)' : i === 1 ? 'white' : 'var(--sw-blue)', animation: `saffronPulse ${1 + i*0.3}s ease-in-out infinite` }} />
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-full shadow-sm" style={{ width: 8, height: 8, background: i === 0 ? 'var(--sw-saffron)' : i === 1 ? 'white' : 'var(--sw-blue)', animation: `saffronPulse ${1 + i * 0.3}s ease-in-out infinite` }} />
         ))}
       </div>
     </div>
@@ -417,7 +409,7 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
           <div className="rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-yellow-400 p-6 text-white shadow-md">
             <h2 className="text-3xl font-black mb-2">{selectedCity} — Complete Travel Guide</h2>
             <p className="text-white/95 text-lg mb-4 leading-relaxed font-medium">{cityData.cityOverview}</p>
-            
+
             {cityData.historicalImportance && (
               <div className="mb-5 bg-black/20 rounded-xl p-4 border border-white/10">
                 <p className="font-bold text-sm mb-1.5 flex items-center gap-2 text-yellow-200">
@@ -426,7 +418,7 @@ function CityPlannerMode({ initialCity }: { initialCity: string }) {
                 <p className="text-white/90 text-sm leading-relaxed">{cityData.historicalImportance}</p>
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-5">
               {[
                 { label: 'Best Time', val: cityData.bestTimeToVisit },
@@ -978,7 +970,7 @@ function JourneyPlannerMode() {
               <div className={`p-6 rounded-2xl border-l-8 shadow-sm ${feasibility.isPossible ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
                 <h2 className="text-2xl font-black mb-2">{feasibility.isPossible ? '✅ Trip is Feasible' : '⚠️ Needs Optimization'}</h2>
                 <p className="text-gray-800 font-medium mb-4">{feasibility.reason}</p>
-                
+
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   {[
                     { label: 'AI Estimated Cost', val: `₹${feasibility.estimatedCost.toLocaleString('en-IN')}` },
@@ -1004,37 +996,37 @@ function JourneyPlannerMode() {
               {/* Detailed Pre-Trip AI Guidance */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm">
-                   <h4 className="font-black text-lg text-blue-700 mb-2 flex items-center gap-2"><span>✈️</span> Recommended Route & Arrival</h4>
-                   <p className="text-sm text-gray-700 mb-3"><span className="font-bold">Land At:</span> {feasibility.suggestedArrivalAirport || 'Nearest major hub'}</p>
-                   {(feasibility.optimizedCityRoute?.length ?? 0) > 0 && (
-                     <div className="text-sm text-gray-700"><span className="font-bold mb-1 block">Optimised Sequence:</span> 
-                     <div className="flex flex-wrap gap-2">
-                       {feasibility.optimizedCityRoute?.map((city, ci, arr) => (
-                         <span key={ci} className="flex items-center gap-2">
-                           <span className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-semibold">{city}</span>
-                           {ci < arr.length - 1 && <span className="text-gray-400">→</span>}
-                         </span>
-                       ))}
-                     </div>
-                     </div>
-                   )}
+                  <h4 className="font-black text-lg text-blue-700 mb-2 flex items-center gap-2"><span>✈️</span> Recommended Route & Arrival</h4>
+                  <p className="text-sm text-gray-700 mb-3"><span className="font-bold">Land At:</span> {feasibility.suggestedArrivalAirport || 'Nearest major hub'}</p>
+                  {(feasibility.optimizedCityRoute?.length ?? 0) > 0 && (
+                    <div className="text-sm text-gray-700"><span className="font-bold mb-1 block">Optimised Sequence:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {feasibility.optimizedCityRoute?.map((city, ci, arr) => (
+                          <span key={ci} className="flex items-center gap-2">
+                            <span className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-semibold">{city}</span>
+                            {ci < arr.length - 1 && <span className="text-gray-400">→</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
+
                 <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm">
-                   <h4 className="font-black text-lg text-red-700 mb-2 flex items-center gap-2"><span>⚠️</span> Survival & Safety Cautions</h4>
-                   {(feasibility.generalCautions?.length ?? 0) > 0 ? (
-                     <ul className="list-disc list-inside text-sm text-gray-700 space-y-1.5">
-                       {feasibility.generalCautions?.map((c, i) => <li key={i}>{c}</li>)}
-                     </ul>
-                   ) : (
-                     <p className="text-sm text-gray-600">No major cautions for this route. Standard travel precautions apply.</p>
-                   )}
+                  <h4 className="font-black text-lg text-red-700 mb-2 flex items-center gap-2"><span>⚠️</span> Survival & Safety Cautions</h4>
+                  {(feasibility.generalCautions?.length ?? 0) > 0 ? (
+                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1.5">
+                      {feasibility.generalCautions?.map((c, i) => <li key={i}>{c}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-600">No major cautions for this route. Standard travel precautions apply.</p>
+                  )}
                 </div>
 
                 {feasibility.foodAndStayAdvice && (
                   <div className="md:col-span-2 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 rounded-r-2xl p-5 shadow-sm">
-                     <h4 className="font-black text-lg text-yellow-800 mb-2 flex items-center gap-2"><span>🏕️</span> Independent Food & Shelter Guidance</h4>
-                     <p className="text-sm text-gray-800 font-medium leading-relaxed">{feasibility.foodAndStayAdvice}</p>
+                    <h4 className="font-black text-lg text-yellow-800 mb-2 flex items-center gap-2"><span>🏕️</span> Independent Food & Shelter Guidance</h4>
+                    <p className="text-sm text-gray-800 font-medium leading-relaxed">{feasibility.foodAndStayAdvice}</p>
                   </div>
                 )}
               </div>
@@ -1111,24 +1103,24 @@ function JourneyPlannerMode() {
 
               <div className="bg-gradient-to-br from-orange-600 via-red-600 to-red-700 text-white rounded-2xl p-8 text-center shadow-xl border-4 border-orange-200/20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full opacity-5 -translate-y-10 translate-x-10 pointer-events-none"></div>
-                
+
                 <p className="text-xl font-black text-orange-100 tracking-wide uppercase mb-2">Total Estimated Need (Post-Landing)</p>
                 <p className="text-5xl md:text-6xl font-black drop-shadow-md">₹{totalRouteCost.toLocaleString('en-IN')}</p>
-                
+
                 <div className="mt-5 bg-black/20 backdrop-blur-sm rounded-xl p-4 inline-block border border-white/10 text-left">
                   <p className="text-sm font-bold text-white flex items-start gap-2 max-w-lg">
                     <span className="text-lg">🛬</span>
                     <span>Note: This estimation covers costs strictly <em>after</em> landing in India. Flights from your origin country to India are EXCLUDED.</span>
                   </p>
                 </div>
-                
+
                 <p className="text-sm font-semibold opacity-90 mt-5 pt-4 border-t border-white/20 flex flex-wrap justify-center gap-x-4 gap-y-2">
-                  <span>{itinerary.length} stops</span> 
-                  <span>•</span> 
-                  <span>{selectedCities.length} cities</span> 
-                  <span>•</span> 
-                  <span>{itinerary.length > 0 ? itinerary.reduce((max, item) => Math.max(max, item.day), 0) : 0} AI Predicted Days</span> 
-                  <span>•</span> 
+                  <span>{itinerary.length} stops</span>
+                  <span>•</span>
+                  <span>{selectedCities.length} cities</span>
+                  <span>•</span>
+                  <span>{itinerary.length > 0 ? itinerary.reduce((max, item) => Math.max(max, item.day), 0) : 0} AI Predicted Days</span>
+                  <span>•</span>
                   <span>Excludes personal accommodation & meals</span>
                 </p>
               </div>

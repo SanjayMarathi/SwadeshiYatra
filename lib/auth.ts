@@ -68,6 +68,14 @@ const seedUsers: StoredUser[] = [
     nationalIdDocument: 'guide_national_id.pdf',
     licenseDocument: 'guide_license.pdf',
   },
+  {
+    id: '5',
+    name: 'Admin',
+    email: 'work455111@gmail.com',
+    password: 'Darshan@455111',
+    role: 'ADMIN',
+    verified: true,
+  },
 ];
 
 const isBrowser = () => typeof window !== 'undefined';
@@ -100,8 +108,23 @@ const loadUsers = (): StoredUser[] => {
     return seedUsers;
   }
   try {
-    const users = JSON.parse(raw) as StoredUser[];
-    return users.length > 0 ? users : seedUsers;
+    let users = JSON.parse(raw) as StoredUser[];
+    if (users.length === 0) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(seedUsers));
+      return seedUsers;
+    }
+    // Always sync the admin seed user so credential changes take effect
+    const adminSeed = seedUsers.find((u) => u.role === 'ADMIN');
+    if (adminSeed) {
+      const idx = users.findIndex((u) => u.role === 'ADMIN');
+      if (idx >= 0) {
+        users[idx] = adminSeed;
+      } else {
+        users.push(adminSeed);
+      }
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+    return users;
   } catch {
     localStorage.setItem(USERS_KEY, JSON.stringify(seedUsers));
     return seedUsers;
@@ -119,6 +142,11 @@ export const getMockCredentials = () => [
   { email: 'restaurant@example.com', password: 'restaurant123', role: 'RESTAURANT' as const },
   { email: 'guide@example.com', password: 'guide123', role: 'GUIDE' as const },
 ];
+
+export const getAdminCredentials = () => ({
+  email: 'work455111@gmail.com',
+  role: 'ADMIN' as const,
+});
 
 export const login = (email: string, password: string, role: UserRole): User | null => {
   const users = loadUsers();
@@ -231,4 +259,27 @@ export const updateCurrentUser = (updates: Partial<User>): User | null => {
   const updatedUser = sanitizeUser(updatedStored);
   localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
   return updatedUser;
+};
+
+export const getAllUsers = (): User[] => {
+  return loadUsers().map(sanitizeUser);
+};
+
+export const setUserVerified = (userId: string, verified: boolean): User | null => {
+  if (!isBrowser()) return null;
+  const users = loadUsers();
+  const index = users.findIndex((u) => u.id === userId);
+  if (index < 0) return null;
+  users[index] = { ...users[index], verified };
+  saveUsers(users);
+  return sanitizeUser(users[index]);
+};
+
+export const deleteUser = (userId: string): boolean => {
+  if (!isBrowser()) return false;
+  const users = loadUsers();
+  const filtered = users.filter((u) => u.id !== userId);
+  if (filtered.length === users.length) return false;
+  saveUsers(filtered);
+  return true;
 };
