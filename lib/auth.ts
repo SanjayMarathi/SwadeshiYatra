@@ -97,6 +97,7 @@ const sanitizeUser = (storedUser: StoredUser): User => {
     contactNumber: storedUser.contactNumber,
     nationalIdDocument: storedUser.nationalIdDocument,
     licenseDocument: storedUser.licenseDocument,
+    rejectionReason: storedUser.rejectionReason,
   };
 };
 
@@ -270,7 +271,18 @@ export const setUserVerified = (userId: string, verified: boolean): User | null 
   const users = loadUsers();
   const index = users.findIndex((u) => u.id === userId);
   if (index < 0) return null;
-  users[index] = { ...users[index], verified };
+  // If verified, clear any rejection reason
+  users[index] = { ...users[index], verified, rejectionReason: verified ? undefined : users[index].rejectionReason };
+  saveUsers(users);
+  return sanitizeUser(users[index]);
+};
+
+export const setUserRejected = (userId: string, reason: string): User | null => {
+  if (!isBrowser()) return null;
+  const users = loadUsers();
+  const index = users.findIndex((u) => u.id === userId);
+  if (index < 0) return null;
+  users[index] = { ...users[index], verified: false, rejectionReason: reason };
   saveUsers(users);
   return sanitizeUser(users[index]);
 };

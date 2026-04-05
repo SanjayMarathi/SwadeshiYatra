@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole } from '@/types';
-import { getCurrentUser, getAllUsers, setUserVerified, deleteUser } from '@/lib/auth';
+import { getCurrentUser, getAllUsers, setUserVerified, setUserRejected, deleteUser } from '@/lib/auth';
 
 type Tab = 'overview' | 'users' | 'verification';
 
@@ -30,6 +30,8 @@ const AdminPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFeedback, setActionFeedback] = useState('');
 
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
+
   const refreshUsers = useCallback(() => {
     setUsers(getAllUsers());
   }, []);
@@ -55,11 +57,27 @@ const AdminPage = () => {
     showFeedback(verified ? '✅ User verified successfully!' : '❌ Verification revoked.');
   };
 
+  const handleReject = (userId: string) => {
+    const reason = rejectionReasons[userId] || 'Information provided is insufficient or invalid.';
+    setUserRejected(userId, reason);
+    setRejectionReasons(prev => {
+      const next = { ...prev };
+      delete next[userId];
+      return next;
+    });
+    refreshUsers();
+    showFeedback('🚫 User application rejected with feedback.');
+  };
+
   const handleDelete = (userId: string, userName: string) => {
     if (!confirm(`Are you sure you want to delete "${userName}"? This cannot be undone.`)) return;
     deleteUser(userId);
     refreshUsers();
     showFeedback(`🗑️ "${userName}" has been removed.`);
+  };
+
+  const viewDocument = (fileName: string) => {
+    alert(`[MOCK VIEW] Opening document: ${fileName}\n\nIn a real production environment, this would open a PDF viewer or download the file from secure storage.`);
   };
 
   // Stats
@@ -230,7 +248,6 @@ const AdminPage = () => {
                     <th className="text-left p-4 font-bold text-orange-900">User</th>
                     <th className="text-left p-4 font-bold text-orange-900">Role</th>
                     <th className="text-left p-4 font-bold text-orange-900 hidden md:table-cell">Location</th>
-                    <th className="text-left p-4 font-bold text-orange-900 hidden md:table-cell">Contact</th>
                     <th className="text-center p-4 font-bold text-orange-900">Status</th>
                     <th className="text-center p-4 font-bold text-orange-900">Actions</th>
                   </tr>
@@ -252,12 +269,16 @@ const AdminPage = () => {
                             {ROLE_ICONS[u.role]} {u.role}
                           </span>
                         </td>
-                        <td className="p-4 hidden md:table-cell text-slate-600">{u.location || '—'}</td>
-                        <td className="p-4 hidden md:table-cell text-slate-600">{u.contactNumber || '—'}</td>
+                        <td className="p-4 hidden md:table-cell text-slate-600">
+                          {u.location || '—'}
+                        </td>
                         <td className="p-4 text-center">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${u.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                            {u.verified ? '✓ Verified' : '⏳ Pending'}
-                          </span>
+                          <div className="flex flex-col items-center">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${u.verified ? 'bg-green-100 text-green-700' : u.rejectionReason ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                              {u.verified ? '✓ Verified' : u.rejectionReason ? '🚫 Rejected' : '⏳ Pending'}
+                            </span>
+                            {u.rejectionReason && <p className="text-[10px] text-red-500 mt-1 max-w-[120px] truncate" title={u.rejectionReason}>Reason: {u.rejectionReason}</p>}
+                          </div>
                         </td>
                         <td className="p-4 text-center">
                           <div className="flex justify-center gap-2">
@@ -314,9 +335,9 @@ const AdminPage = () => {
 
               {pendingVerification.map((u) => (
                 <div key={u.id} className="theme-card rounded-2xl p-6 border border-yellow-100 shadow-md hover:shadow-lg transition-shadow">
-                  <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
+                  <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+                    <div className="flex-1 w-full">
+                      <div className="flex items-center gap-3 mb-4">
                         <span className="text-2xl">{ROLE_ICONS[u.role]}</span>
                         <div>
                           <h3 className="text-lg font-bold text-orange-900">{u.name}</h3>
@@ -325,50 +346,64 @@ const AdminPage = () => {
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${ROLE_COLORS[u.role]}`}>{u.role}</span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 text-sm">
-                        {u.location && (
-                          <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
-                            <span className="font-bold text-orange-800 block text-xs">📍 Location</span>
-                            <span className="text-slate-700">{u.location}</span>
-                          </div>
-                        )}
-                        {u.contactNumber && (
-                          <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
-                            <span className="font-bold text-orange-800 block text-xs">📞 Contact</span>
-                            <span className="text-slate-700">{u.contactNumber}</span>
-                          </div>
-                        )}
-                        {u.price !== undefined && (
-                          <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
-                            <span className="font-bold text-orange-800 block text-xs">💰 Price</span>
-                            <span className="text-slate-700">₹{u.price}</span>
-                          </div>
-                        )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-6">
+                        <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
+                          <span className="font-bold text-orange-800 block text-xs mb-1">📍 Location</span>
+                          <span className="text-slate-700">{u.location || 'Not specified'}</span>
+                        </div>
+                        <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
+                          <span className="font-bold text-orange-800 block text-xs mb-1">📞 Contact</span>
+                          <span className="text-slate-700">{u.contactNumber || 'Not specified'}</span>
+                        </div>
+                        
                         {u.nationalIdDocument && (
-                          <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
-                            <span className="font-bold text-orange-800 block text-xs">🪪 National ID</span>
-                            <span className="text-slate-700">{u.nationalIdDocument}</span>
-                          </div>
+                          <button 
+                            onClick={() => viewDocument(u.nationalIdDocument!)}
+                            className="flex items-center justify-between bg-white rounded-xl p-3 border border-orange-200 hover:border-orange-400 transition-colors group"
+                          >
+                            <div>
+                              <span className="font-bold text-orange-800 block text-xs mb-0.5 text-left">🪪 National ID</span>
+                              <span className="text-slate-600 text-xs truncate max-w-[120px]">{u.nationalIdDocument}</span>
+                            </div>
+                            <span className="text-orange-400 group-hover:text-orange-600">👁️</span>
+                          </button>
                         )}
+                        
                         {u.licenseDocument && (
-                          <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
-                            <span className="font-bold text-orange-800 block text-xs">📄 License</span>
-                            <span className="text-slate-700">{u.licenseDocument}</span>
-                          </div>
+                          <button 
+                            onClick={() => viewDocument(u.licenseDocument!)}
+                            className="flex items-center justify-between bg-white rounded-xl p-3 border border-orange-200 hover:border-orange-400 transition-colors group"
+                          >
+                            <div>
+                              <span className="font-bold text-orange-800 block text-xs mb-0.5 text-left">📄 Authorized License</span>
+                              <span className="text-slate-600 text-xs truncate max-w-[120px]">{u.licenseDocument}</span>
+                            </div>
+                            <span className="text-orange-400 group-hover:text-orange-600">👁️</span>
+                          </button>
                         )}
+                      </div>
+
+                      <div className="mt-4">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Rejection Feedback (Optional)</label>
+                        <textarea
+                          placeholder="Explain why the application is being rejected..."
+                          value={rejectionReasons[u.id] || ''}
+                          onChange={(e) => setRejectionReasons({ ...rejectionReasons, [u.id]: e.target.value })}
+                          className="w-full rounded-xl border border-orange-100 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 min-h-[80px]"
+                        />
                       </div>
                     </div>
 
-                    <div className="flex gap-2 self-start md:self-center">
+                    <div className="flex lg:flex-col gap-2 w-full lg:w-48">
                       <button
                         onClick={() => handleVerify(u.id, true)}
-                        className="px-5 py-2.5 rounded-xl font-bold text-sm bg-green-500 text-white hover:bg-green-600 transition-colors shadow-md"
+                        className="flex-1 lg:w-full px-5 py-3 rounded-xl font-bold text-sm bg-green-500 text-white hover:bg-green-600 transition-colors shadow-md"
                       >
                         ✓ Approve
                       </button>
                       <button
-                        onClick={() => handleDelete(u.id, u.name)}
-                        className="px-5 py-2.5 rounded-xl font-bold text-sm bg-red-100 text-red-700 hover:bg-red-200 transition-colors border border-red-200"
+                        onClick={() => handleReject(u.id)}
+                        className="flex-1 lg:w-full px-5 py-3 rounded-xl font-bold text-sm bg-red-100 text-red-700 hover:bg-red-200 transition-colors border border-red-200"
                       >
                         ✕ Reject
                       </button>

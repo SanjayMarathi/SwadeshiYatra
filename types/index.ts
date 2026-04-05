@@ -16,6 +16,7 @@ export interface User {
   contactNumber?: string;
   nationalIdDocument?: string;
   licenseDocument?: string;
+  rejectionReason?: string;
 }
 
 export interface TouristPlace {

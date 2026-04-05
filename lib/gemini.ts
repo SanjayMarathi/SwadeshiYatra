@@ -1,13 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { runWithRotation } from "./api-keys";
 import { FeasibilityResult, ItineraryItem, TouristPlace, TripPreferences } from "@/types";
 
-const geminiApiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
-
 const MODEL_CANDIDATES = [
-  "gemini-2.5-flash",
-  "gemini-flash-latest",
-  "gemini-pro-latest",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
 ];
 
 const GEMINI_ALERT = "Gemini not giving data alert";
@@ -84,31 +82,34 @@ const extractJson = <T>(text: string, kind: 'array' | 'object'): T => {
 };
 
 const generateText = async (prompt: string): Promise<string> => {
-  if (!genAI) {
-    throw makeGeminiError("GEMINI_API_KEY not set");
-  }
-
-  let lastError: unknown = null;
-  for (const modelName of MODEL_CANDIDATES) {
-    try {
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        generationConfig: { responseMimeType: "application/json" }
-      });
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      if (!text?.trim()) {
-        throw makeGeminiError("Empty response");
+  return runWithRotation(async (genAI) => {
+    let lastError: any = null;
+    for (const modelName of MODEL_CANDIDATES) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+        if (!text?.trim()) {
+          throw makeGeminiError("Empty response");
+        }
+        return text;
+      } catch (err: any) {
+        // If it's a model specific error (like 404), continue to next model
+        // If it's a quota error (429), re-throw it so runWithRotation can catch it and switch keys
+        if (err.message?.includes("429") || err.status === 429) {
+          throw err; // Signal rotation
+        }
+        console.error(`[gemini] Model ${modelName} failed:`, err.message || err);
+        lastError = err;
       }
-      return text;
-    } catch (err) {
-      console.error(`[gemini] Model ${modelName} failed:`, err);
-      lastError = err;
     }
-  }
-
-  throw makeGeminiError(lastError ?? "All Gemini models failed");
+    throw lastError || makeGeminiError("All models failed for current key");
+  });
 };
+
 
 export const getTouristPlaces = async (city: string): Promise<TouristPlace[]> => {
   const prompt = `List exactly 8 real and currently relevant tourist attractions in ${city}, India.

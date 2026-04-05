@@ -1,10 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const geminiApiKey =
-  process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-  process.env.GEMINI_API_KEY ||
-  "";
-
+import { runWithRotation } from "./api-keys";
 
 export interface CitySuggestion {
   name: string;
@@ -14,29 +9,34 @@ export interface CitySuggestion {
 export async function searchCities(
   query: string
 ): Promise<CitySuggestion[]> {
-  if (!geminiApiKey || !query.trim()) return [];
+  if (!query.trim()) return [];
 
-  try {
-    const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  return runWithRotation(async (genAI) => {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = `User typed: "${query}". Return a JSON array of up to 5 actual major Indian cities matching this prefix or spelling.
+      const prompt = `User typed: "${query}". Return a JSON array of up to 5 actual major Indian cities matching this prefix or spelling.
 Format STRICTLY as:
 [{"name":"City Name","placeId":"cityname","description":"City Name, State, India"}]`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const stripped = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-    const match = stripped.match(/\[[\s\S]*?\]/);
-    if (match?.[0]) {
-      return JSON.parse(match[0]) as CitySuggestion[];
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const stripped = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const match = stripped.match(/\[[\s\S]*?\]/);
+      if (match?.[0]) {
+        return JSON.parse(match[0]) as CitySuggestion[];
+      }
+      return [];
+    } catch (err: any) {
+      if (err.message?.includes("429") || err.status === 429) {
+        throw err; // Signal rotation
+      }
+      console.error("[fallback-places] Autocomplete failed:", err.message || err);
+      return [];
     }
-    return [];
-  } catch (err) {
-    console.error("[fallback-places] Autocomplete failed:", err);
-    return [];
-  }
+  });
 }
+
 
 // ─── Place Photo ─────────────────────────────────────────────────────────────
 
