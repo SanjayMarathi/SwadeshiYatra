@@ -72,7 +72,7 @@ const seedUsers: StoredUser[] = [
     id: '5',
     name: 'Admin',
     email: 'work455111@gmail.com',
-    password: 'Darshan@455111',
+    password: '455111',
     role: 'ADMIN',
     verified: true,
   },
